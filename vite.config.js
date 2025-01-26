@@ -1,6 +1,5 @@
 import { defineConfig } from "vite"
 import { sveltekit } from "@sveltejs/kit/vite"
-// @ts-expect-error houdini stuff gets resolved at runtime somehow idk lol
 import houdini from "houdini/vite"
 
 // // @ts-expect-error process is a nodejs global
