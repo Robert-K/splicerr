@@ -1,0 +1,5020 @@
+enum ActivityTypeSlug {
+  addedToCollection
+  completed
+  created
+  liked
+  purchased
+}
+
+type AddAssetToCollection {
+  asset: ChildAsset
+  collection: CollectionAsset
+}
+
+union AnyAsset = CollectionAsset | LessonAsset | MidiAsset | PackAsset | PresetAsset | SampleAsset | VideoAsset
+
+"""
+ArchiveManifest represents the content and relative paths of a collection of files,
+such as might be bundled into a zip file or DAW project folder.
+"""
+type ArchiveManifest {
+  """Entries is the list of files and directories in the archive"""
+  entries: [ArchiveManifestEntry!]!
+
+  """Name of the archive, i.e. zip filename"""
+  name: String
+}
+
+"""
+ArchiveManifestEntry represents a single file or directory in an ArchiveManifest.
+For files, exactly one of `url` or `data` will be set. (Directories have no content.)
+"""
+type ArchiveManifestEntry {
+  """Data is the actual Base64-encoded file content"""
+  data: String
+
+  """Meta is a list of tags or "key:value" items"""
+  meta: [String!]
+
+  """
+  Path of the entry relative to the archive root, e.g. dir/ or my/file.txt
+  """
+  path: String!
+
+  """URL from which to GET the file content"""
+  url: String
+}
+
+enum AssetAccessTypeSlug {
+  public
+  subscribed
+  trial
+}
+
+type AssetActivity {
+  type: ActivityTypeSlug
+  users: [GUID!]
+}
+
+"""
+an asset attribute is a property of an asset that is usually determined by
+custom business logic, ie it isn't something you can infer from the asset itself
+for example a "rare find" is determined by a data science algorithm analyzing user activity
+"""
+enum AssetAttributeSlug {
+  presonus_evergreen
+  rare
+}
+
+"""
+an asset bundled content daw refers to any daw that has free bundled content
+including the asset. For example "presonus_studio_one_pro" indicates this asset
+is eligible for presonus studio one pro free bundled content.
+"""
+enum AssetBundledContentDawSlug {
+  presonus_studio_one_pro
+}
+
+"""
+An asset category is essentially the kind of a sample: loop, one shot, etc.
+"""
+type AssetCategory {
+  id: Int
+
+  """The user-friendly name for the category (ie, "Foo Bar")"""
+  label: String
+
+  """The tokenized format of the label. (ie, "foo-bar")"""
+  slug: AssetCategorySlug
+}
+
+enum AssetCategorySlug {
+  guide
+  loop
+  oneshot
+  technique
+}
+
+"""Inputs to return children of one or more parent assets"""
+input AssetChildrenInput {
+  """Return all children of these parent assets"""
+  parent_asset_uuids: [GUID]
+}
+
+"""Input values used when creating a brand new Asset."""
+input AssetCreateInput {
+  """
+  Asset Visibility Slug will be used to represent a video's availability (trial, public or subscribed)
+  """
+  asset_access_type_slug: AssetAccessTypeSlug
+  asset_category_slug: AssetCategorySlug
+  asset_status_slug: AssetStatusSlug
+  asset_type_slug: AssetTypeSlug
+  banner_image: Upload
+  child_asset_uuids: [GUID]
+  cover_image: Upload
+  description: String
+  device_uuids: [GUID]
+  header_image: Upload
+  instructor_uuids: [GUID]
+  mp4: Upload
+  name: String
+  parent_asset_uuids: [GUID]
+  provider_uuid: GUID
+
+  """
+  Public will be used to represent whether the video is available only to all
+  """
+  public: Boolean
+
+  """A string field on a Lesson asset"""
+  subheader: String
+  tag_uuids: [String]
+
+  """
+  Trial will be used to represent whether the video is available only to trial members
+  """
+  trial: Boolean
+}
+
+"""a specific minimum version of a device to require"""
+type AssetDevice {
+  device: IDevice
+  minimum_version: String
+
+  """uuid of a Device"""
+  uuid: GUID
+}
+
+"""Error info on an asset"""
+type AssetErrorDetail {
+  level: AssetErrorLevel
+  message: String
+  type: String
+}
+
+"""TODO: This requires better documentation"""
+enum AssetErrorLevel {
+  error
+  warning
+}
+
+"""A file associated with an Asset"""
+type AssetFile {
+  asset_file_type_slug: AssetFileTypeSlug
+  created_at: DateTime
+  deleted_at: DateTime
+  fingerprint: String
+  hash: String
+  name: String
+
+  """
+  Path to file in asset directory structure
+  example: '/path/to/the/folder/filename'
+  """
+  path: String
+  updated_at: DateTime
+
+  """The fully-qualified URL to the file."""
+  url: URL
+  uuid: GUID!
+}
+
+"""
+The types of files that can me associated with an asset such as images, audio, or source
+"""
+type AssetFileType {
+  id: Int
+
+  """The user-friendly name for the type (ie, "Foo Bar")"""
+  label: String
+
+  """The tokenized format of the label. (ie, "foo-bar")"""
+  slug: AssetFileTypeSlug
+}
+
+enum AssetFileTypeSlug {
+  banner_image
+  cover_image
+  demo_mp3
+  generated_cover_image
+  header_image
+  mp4
+  preview_mp3
+  source
+  srt_transcript
+  thumbnail_image
+  vtt_transcript
+  waveform
+  zip_file
+}
+
+"""A list of files for an asset"""
+type AssetFilesList {
+  assetStatusSlug: String
+
+  """Used to enforce response data policy"""
+  assetTypeSlug: String
+  assetUuid: GUID
+  files: [AssetFile!]
+  public: Boolean
+}
+
+"""
+These inputs narrow the characteristics of the Assets returned
+in the query. `AssetTypeSlug!` is required, since only one type
+of asset can be returned at a time.
+"""
+input AssetFiltersInput {
+  """Optional UUID for searches performed with autocomplete suggestion"""
+  ac_uuid: String
+
+  """
+  Filter Sample assets by a specific `asset_category_slug`.
+    any category set: 'loop'
+    no category set: 'NOT_SET'
+  """
+  asset_category_slug: AssetCategorySlug
+
+  """Status of assets to return in response"""
+  asset_status_slug: AssetStatusSlug
+
+  """Only one Asset type can be returned at a time, so this is required."""
+  asset_type_slug: AssetTypeSlug!
+
+  """
+  Return only content whose attributes property contains the list of strings
+  """
+  attributes: [AssetAttributeSlug!]
+
+  """Exclude content whose attributes property contains the list of strings"""
+  attributes_exclude: [AssetAttributeSlug!]
+
+  """
+  Filter Sample assets by a specific `bpm`.
+    equal bpm: '120'
+    not equal bpm: '!120'
+    any bpm set: 'IS_SET'
+    no bpm set: 'NOT_SET'
+  """
+  bpm: String
+
+  """
+  Return only content whose bundled content daws property contains the list of strings
+  """
+  bundled_content_daws: [AssetBundledContentDawSlug!]
+
+  """
+  Exclude content whose bundled content daws contains the list of strings
+  """
+  bundled_content_daws_exclude: [AssetBundledContentDawSlug!]
+
+  """
+  Chord types: major, minor
+    equal chord: 'major'
+    not equal chord: '!major'
+    any chord set: 'IS_SET'
+    no chord set: 'NOT_SET'
+  """
+  chord_type: String
+
+  """Seeds for coso search"""
+  coso_seed: CosoSeedInput
+
+  """
+  Only return assets associated with a particular device eg. "serum"
+  """
+  device_name: String
+
+  """Asset Device GUID"""
+  device_uuids: [GUID]
+  drums_only: Boolean
+
+  """Only return assets that match a filepath"""
+  filepath: String
+
+  """
+  Only return assets associated with a genre e.g. "trap"
+  """
+  genre: String
+
+  """Only return assets that have errors"""
+  has_errors: Boolean
+
+  """Only return assets that have warnings"""
+  has_warnings: Boolean
+  include_inherited_tags: Boolean
+
+  """Asset Instructor GUID"""
+  instructor_uuids: [GUID]
+
+  """
+  Sample assets in `key`.
+    equal key: 'a#'
+    not equal key: '!a#'
+    any key set: 'IS_SET'
+    no key set: 'NOT_SET'
+  """
+  key: String
+
+  """
+  Return only content that the Authenticated User has a license to use. This is filtered by default.
+  """
+  licensed: Boolean
+
+  """
+  Return only content that the Authenticated User liked/did not like. This is not filtered by default.
+  """
+  liked: Boolean
+
+  """Filter Sample assets with a maximum `bpm`. Example: 140."""
+  max_bpm: Int
+
+  """Filter Sample assets with a minimum `bpm`. Example: 120."""
+  min_bpm: Int
+  name: String
+  name_exclude: String
+
+  """Only return assets owned by the current user"""
+  owned: Boolean
+
+  """Provider UUID"""
+  provider: GUID
+
+  """Allows filtering by published or unpublished status"""
+  published: Boolean
+
+  """
+  URL-encoded search query.
+  This allows us to execute a string search against multiple fields eg. "Trap Snare"
+  """
+  query: String
+
+  """
+  Allow legacy clients to query tags in a backward-compatible way.
+  This input relaxes the `GUID` input type so that we can pass string
+  identifiers into queries.
+  """
+  tag_ids: [ID]
+  tag_ids_exclude: [ID]
+  tag_uuids_exclude: [GUID]
+
+  """Return only content matching the tag uuids in the comma-delimited"""
+  tags: [ID]
+
+  """Asset User GUID"""
+  user_uuid: GUID
+}
+
+type AssetFolderSummary {
+  children: [AssetFolderSummary]
+  count: Int
+  name: String
+}
+
+"""
+Ingestion issues for the asset itself, and if a parent asset, all children
+"""
+type AssetIngestionIssues {
+  """Ingestion issue details for all child assets"""
+  child_issues: [AssetIssueDetail]
+
+  """Ingestion issue details for the asset"""
+  issues: [AssetIssueDetail]
+}
+
+type AssetIssueDetail {
+  """Asset type of the asset which is the source of this issue."""
+  asset_type_slug: AssetTypeSlug
+
+  """GUID of the asset which is the source of this issue."""
+  asset_uuid: GUID
+  level: AssetErrorLevel
+  message: String
+  metadata: AssetIssueDetailMetadata
+
+  """Ingestion issue type. "upload", for example."""
+  type: String
+}
+
+type AssetIssueDetailMetadata {
+  assets: [IAsset]
+  filename: String
+  fingerprint: String
+}
+
+enum AssetJobState {
+  building
+  completed
+  error
+  pending
+  processing
+  unknown
+}
+
+"""
+Use this input type to query the asset entry point
+for legacy assets
+"""
+input AssetLegacyInput {
+  searchCatalog: Boolean
+  type: AssetTypeSlug!
+}
+
+"""Paged set of Assets"""
+type AssetPage {
+  device_summary: [DeviceSummary!]
+  folder_summary: [AssetFolderSummary!]
+
+  """Subset of Assets"""
+  items: [AnyAsset!]
+  pagination_metadata: PaginationMetadata
+  response_metadata: ResponseMetadata
+
+  """
+  A list of tag uuids and their number of occurrences in the full set of Assets
+  """
+  tag_summary: [TagSummary!]
+}
+
+"""Inputs to return the parent of a child asset"""
+input AssetParentsInput {
+  """Return all parents of a child"""
+  child_asset_uuid: GUID
+}
+
+enum AssetPublishResult {
+  failure
+  partial
+  success
+}
+
+"""
+An asset status indicates whether an asset is published or unpublished.
+"""
+type AssetPublishStatus {
+  child_asset_uuids: [String]
+  id: Int
+  parent_asset_uuid: String
+}
+
+enum AssetRequestedStatus {
+  published
+  unpublished
+}
+
+"""
+Use this endpoint for parameters for legacy API search inputs. Only contains the parameters necessary to resolve
+to legacy endpoints that won't be needed for catalog.
+"""
+input AssetSearchLegacyInput {
+  parent_asset_type: AssetTypeSlug
+  use: Boolean
+}
+
+"""Inputs to sort the returned list of Assets"""
+input AssetSortInput {
+  """asc or desc"""
+  order: SortOrder
+
+  """
+  Enforce a stable random sort across page refreshes & pagination.
+  Send a new random_seed to refresh search results.
+  """
+  random_seed: String
+
+  """The order in which a search query returns results"""
+  sort: AssetSortType
+}
+
+enum AssetSortType {
+  asset_status_slug
+  audio_key
+  bpm
+  duration
+  key @deprecated(reason: "key is deprecated, use audio_key")
+  name
+  popularity
+  provider_name
+  published_at
+  random
+  recency
+  recommended
+  relevance
+  score
+  updated_at
+}
+
+"""TODO: This requires better documentation"""
+type AssetStatus {
+  id: Int
+
+  """The user-friendly name for the type (ie, "Foo Bar")"""
+  label: String
+
+  """The tokenized format of the label. (ie, "foo-bar")"""
+  slug: AssetStatusSlug
+}
+
+"""
+As opposed to the `AssetStatusSlug`, this enum lets us specify
+additional states when querying assets that don't necessarily
+map 1:1 with the status of the assets themselves. For instance,
+assets can be queried by whether they're published, but we also
+want to return results that the user has licensed, regardless
+of the published status of the asset.
+"""
+enum AssetStatusQuerySlug {
+  licensed
+  published
+  unpublished
+}
+
+enum AssetStatusSlug {
+  published
+  unpublished
+}
+
+"""Asset Type is the type of thing you get."""
+type AssetType {
+  id: Int
+
+  """The user-friendly name for the type (ie, "Foo Bar")"""
+  label: String
+
+  """The tokenized format of the label. (ie, "foo-bar")"""
+  slug: AssetTypeSlug
+}
+
+enum AssetTypeSlug {
+  collection
+  lesson
+  midi
+  pack
+  plugin
+  preset
+  sample
+  video
+}
+
+"""
+Input values used when creating or updating an Asset. Not all fields are
+relevant to all asset types.
+"""
+input AssetUpdateInput {
+  """
+  Asset Visibility Slug will be used to represent a video's availability (trial, public or subscribed)
+  """
+  asset_access_type_slug: AssetAccessTypeSlug
+  asset_category_slug: AssetCategorySlug
+  asset_status_slug: AssetStatusSlug
+  bpm: Int
+  child_asset_uuids: [GUID]
+  chord_type: String
+
+  """An image file of an asset's image preview."""
+  cover_image: Upload
+  description: String
+
+  """A device on a preset"""
+  device_uuid: [GUID]
+
+  """An array of device objects for a video asset"""
+  device_uuids: [GUID]
+
+  """An array of instructor objects for a video asset"""
+  instructor_uuids: [GUID]
+  key: String
+
+  """An array of lessons for a video asset"""
+  lessons: [GUID]
+
+  """Free form device version"""
+  minimum_device_version: String
+
+  """mp4 for a video asset"""
+  mp4: Upload
+  name: String
+  parent_asset_uuids: [GUID]
+
+  """Where the asset lives on the site"""
+  permalink_slug: String
+
+  """An MP3 file of an asset's audio preview."""
+  preview_mp3: Upload
+
+  """How much to charge"""
+  price_amount: Float
+  provider_sku: String
+  provider_uuid: GUID
+
+  """
+  Public will be used to represent whether the video is available to all users
+  """
+  public: Boolean
+
+  """A string field on a Lesson asset"""
+  subheader: String
+  tag_uuids: [GUID]
+
+  """
+  Trial will be used to represent whether the video is available only to trial members
+  """
+  trial: Boolean
+
+  """Required during update; ignored during create."""
+  uuid: GUID
+}
+
+"""Input values used when uploading an Asset."""
+input AssetUploadInput {
+  asset_type: AssetTypeSlug
+
+  """A device name is the name of the Preset asset's device"""
+  device_name: String
+
+  """A minimum device version is the version of the Preset asset's device"""
+  minimum_device_version: String
+  uuid: GUID
+
+  """A zip file that is correctly structured for the asset type selected."""
+  zip: Upload!
+}
+
+"""UUID will be deleted soon."""
+type AssetUploadStatus {
+  asset_uuid: GUID!
+  entity_type: AssetTypeSlug
+  job_state: AssetJobState
+  job_uuid: GUID
+}
+
+"""Input values used when uploading an Asset."""
+input AssetUploadStatusInput {
+  uuid: GUID
+}
+
+type AssetsCost {
+  count: Int!
+  price: Price!
+  type: AssetTypeSlug!
+}
+
+type AvailableCreditPacks {
+  credit_boosters: [CreditPack]
+  max_credits: Int
+  recommended: GUID
+}
+
+enum BillingFrequencySlug {
+  annual
+  monthly
+}
+
+type BulkAddAssetsToCollection {
+  collection: CollectionAsset
+}
+
+input BulkAssetActionInput {
+  assetType: AssetTypeSlug
+  items: [String]
+}
+
+"""
+Input values used when creating a brand new Asset.
+
+All of these values needs to match the same filter values that
+are pass in the the search for an asset in
+apps/graphql/src/app/graphql/catalog/Query.graphql
+"""
+input BulkAssetUpdateFilters {
+  asset_category_slug: String
+  asset_status_slug: AssetStatusSlug
+  asset_type_slug: AssetTypeSlug!
+  bpm: String
+  chord_type: String
+  device_name: String
+  device_uuids: [GUID]
+  excluded_uuids: [GUID]
+  filepath: String
+  genre: String
+  has_errors: Boolean
+  has_warnings: Boolean
+  include_inherited_tags: Boolean
+  instructor_uuids: [GUID]
+  key: String
+  licensed: Boolean
+  liked: Boolean
+  max_bpm: Int
+  min_bpm: Int
+  name: String
+  name_exclude: String
+  parent_asset_uuids: [GUID]
+  provider: GUID
+  query: String
+  selected_uuids: [GUID]
+  tag_uuids_exclude: [GUID]
+  tags: [GUID]
+}
+
+"""Input values used when creating a brand new Asset."""
+input BulkAssetUpdateInput {
+  add_devices: [GUID]
+  add_instructors: [GUID]
+  add_parent_asset_uuids: [GUID]
+  add_tags: [GUID]
+  asset_access_type_slug: AssetAccessTypeSlug
+  asset_category_slug: AssetCategorySlug
+  asset_type_slug: AssetTypeSlug
+  bpm: Int
+  chord_type: String
+  currency: String
+  device_uuid: String
+  key: String
+  marketplace_status_slug: MarketplaceStatusSlug
+  minimum_device_version: String
+  price_amount: Float
+  public: Boolean
+  remove_all_devices: Boolean
+  remove_all_instructors: Boolean
+  remove_all_parent_assets: Boolean
+  remove_all_tags: Boolean
+  remove_devices: [GUID]
+  remove_instructors: [GUID]
+  remove_parent_asset_uuids: [GUID]
+  remove_tags: [GUID]
+  replace_tags: [GUID]
+  trial: Boolean
+}
+
+type BulkPublishResponse {
+  errors: [PublishError]!
+  requested_status: AssetRequestedStatus!
+  result: AssetPublishResult!
+}
+
+type CatalogJobError {
+  asset: AnyAsset
+  asset_uuid: GUID!
+  errors: [String]
+}
+
+type CatalogJobResponse {
+  action: String
+  errors: [CatalogJobError]
+  id: Int
+  job_uuid: String
+  status: String
+}
+
+enum CatalogJobStatus {
+  completed
+  error
+  processing
+}
+
+union ChildAsset = MidiAsset | PresetAsset | SampleAsset | VideoAsset
+
+enum ChromaType {
+  CHROMA_TYPE_DEEP
+  CHROMA_TYPE_UNSPECIFIED
+}
+
+type CollectionAsset implements IAsset & IAssetParent & ICollection & ILegacyAsset {
+  activities: [AssetActivity]
+  allowed_asset_type_child: [AssetType]
+  asset_prices: [Price]
+  asset_status_slug: AssetStatusSlug
+  asset_type: AssetType
+  asset_type_slug: AssetTypeSlug
+
+  """Eg. if an asset is rare"""
+  attributes: [AssetAttributeSlug!]
+
+  """Eg, if asset is eligible for Presonus free bundled content"""
+  bundled_content_daws: [AssetBundledContentDawSlug!]
+  catalog_uuid: GUID
+
+  """
+  A summary count of all child assets of this asset, grouped by asset type.
+  """
+  child_asset_counts: [RelatedAssetsCounts]
+
+  """A query for children of this asset."""
+  children(filter: AssetFiltersInput!, pagination: CursorPaginationInput, sort: AssetSortInput): AssetPage
+  cost: [AssetsCost!]
+  created_at: DateTime
+  creator: User
+  description: String
+  files: [AssetFile!]
+
+  """An array of ingestion issues associated with the asset."""
+  ingestion_issues: AssetIngestionIssues
+  is_subscribed: Boolean
+  legacy_permalink: String
+  legacy_uuid: GUID
+  licensed: Boolean
+  liked: Boolean
+  marketplace_status_slug: MarketplaceStatusSlug
+  name: String
+  owned: Boolean
+  permalink_base_url: String
+  permalink_slug: String
+  provider: Provider
+  provider_sku: String
+  provider_uuid: GUID
+  public: Boolean
+  subscriber_count: Int
+  subscribers_subset: [User]
+  tags: [Tag]
+  updated_at: DateTime
+  uuid: GUID!
+}
+
+type CompanionPackGroup {
+  members: [CompanionPackGroupMember]
+  parent_pack: CompanionPackGroupMember
+  uuid: ID
+}
+
+input CompanionPackGroupInput {
+  members: [CompanionPackGroupMemberInput]
+  parent_pack: CompanionPackGroupMemberInput
+  uuid: ID
+}
+
+type CompanionPackGroupMember {
+  pack: LegacyPack2
+}
+
+input CompanionPackGroupMemberInput {
+  pack: PackInput
+}
+
+type ContentGroup {
+  description: String
+  entries: [ContentGroupEntry]
+  title: String
+  type: String
+}
+
+type ContentGroupEntry {
+  caption: String
+  main_image_url: String
+  mobile_image_url: String
+  sample_pack: ContentGroupSamplePack
+  sample_pack_uuid: String
+  type: String
+  url: String
+  user_premium_set: ContentGroupUserPremiumSet
+  user_premium_set_uuid: String
+}
+
+type ContentGroupSamplePack {
+  cover_url: String
+  demo_mp3_url: String
+  description: String
+  liked: Boolean
+  main_genre: String
+  name: String
+  permalink: String
+  preset_count: Int
+  provider_name: String
+  provider_permalink: String
+  provider_uuid: String
+  sample_count: Int
+  tags: [String]
+  uuid: ID
+}
+
+type ContentGroupUser {
+  avatar_url: String
+  id: Int
+  name: String
+  username: String
+}
+
+type ContentGroupUserPremiumSet {
+  cover_url: String
+  creator: ContentGroupUser
+  description: String
+  name: String
+  permalink: String
+  preset_count: Int
+  sample_count: Int
+  subscription_count: Int
+  uuid: ID
+}
+
+type ConversionInfo {
+  amount_off: Int
+  duration: Int
+  has_valid_coupon: Boolean
+  plan_cost: Int
+  plan_credits: Int
+  plan_name: String
+  plan_subtotal: Int
+  plan_tax: Int
+  plan_term: BillingFrequencySlug
+  plan_total: Int
+  tax_type: String
+}
+
+type CosoCustomStackTemplate {
+  defaultLayers: [String!]
+  description: String
+  label: String
+  layerFilters: [CosoLayerFilter!]
+  uuid: String!
+  version: CosoTemplateVersion
+}
+
+input CosoCustomStackTemplateInput {
+  defaultLayers: [String!]
+  description: String
+  label: String
+  layerFilters: [CosoLayerFilterInput!]
+  prompt: String
+  uuid: String!
+  version: CosoTemplateVersionInput
+}
+
+type CosoHarmonicModeKey {
+  audioKey: String
+  chordType: String
+}
+
+type CosoLabelItem {
+  label: String!
+  slug: String!
+}
+
+type CosoLayerFilter {
+  bpmMax: Int
+  bpmMin: Int
+  layerType: String!
+  tagFilter: String
+}
+
+input CosoLayerFilterInput {
+  bpmMax: Int
+  bpmMin: Int
+  layerType: String!
+  tagFilter: String
+}
+
+type CosoPlaybackMetadata {
+  bpm: Int
+  numBars: Int
+  playbackBpm: Float
+  psOffset: Int
+}
+
+"""
+CosoSeedInput is a oneof type for seed input in CoSo new stack queries.
+Only one field may be set.
+"""
+input CosoSeedInput {
+  """assetUuid specifies an asset in Splice catalog to use as the seed"""
+  assetUuid: String
+
+  """clipUuid specifies a clip to use as the seed"""
+  clipUuid: String
+
+  """seedLayers is a list of existing StackLayers to use as the seed"""
+  seedLayers: [StackLayerInput!]
+
+  """userAudioFileHash specifies a user audio file to use as the seed"""
+  userAudioFileHash: String
+}
+
+type CosoStackLayerType {
+  color: String
+  label: String!
+  slug: ID!
+}
+
+type CosoStackTemplate {
+  accessLevel: CosoStackTemplateAccessLevel
+  collageImageUrls: [String!]
+  coverImageUrl: String
+  description: String
+  genreTagUuids: [GUID!]
+  genreTags: [Tag]
+  label: String!
+  slug: ID!
+}
+
+enum CosoStackTemplateAccessLevel {
+  STACK_TEMPLATE_ACCESS_LEVEL_PREMIUM
+  STACK_TEMPLATE_ACCESS_LEVEL_UNSPECIFIED
+}
+
+type CosoTemplateVersion {
+  at: String
+  userUuid: String
+  version: Int!
+}
+
+input CosoTemplateVersionInput {
+  at: String
+  userUuid: String
+  version: Int!
+}
+
+type CosoTypeMetadata {
+  layerTypeLabels: [CosoLabelItem!]
+  layerTypeMetadata: [CosoStackLayerType!]
+  layerTypes: [String!]
+  stackTemplateLabels: [CosoLabelItem!]
+  stackTemplateMetadata: [CosoStackTemplate!]
+  stackTemplates: [String!]
+}
+
+type CostEstimate {
+  cost: Int!
+  userCredits: Int
+}
+
+enum CouponType {
+  BULK
+  SINGLE_CODE
+}
+
+type CreateProofOfLicense {
+  downloadUrl: String!
+  record: ProofOfLicense
+}
+
+type CreditPack {
+  credits: Int
+  is_available: Boolean
+  price: CreditPackPrice
+  uuid: GUID!
+}
+
+type CreditPackPrice {
+  USD: CreditPackPriceDetails
+}
+
+type CreditPackPriceDetails {
+  subtotal: Int
+  tax: Int
+  total: Int
+}
+
+type CreditSpend {
+  asset: AnyAsset
+  assetTypeSlug: String
+  assetUuid: String!
+  downloadUrl: String
+  purchaseDate: DateTime
+  purchased: Boolean
+}
+
+type CreditsPurchaseResponse {
+  credit_balance: Int
+}
+
+enum Currency {
+  Credits
+  USD
+}
+
+"""
+Reusable input that provides pagination parameters, useful
+for any cursor paginated query from the API.
+"""
+input CursorPaginationInput {
+  """
+  An identifier for where in the total results to begin to return records.
+  """
+  cursor: String
+
+  """Number of records to return in a single request."""
+  limit: Int
+
+  """
+  An identifier for where in the total results to begin to return records.
+  """
+  page: Int
+}
+
+type CustomStackTemplateFromPromptResult {
+  prompt: String
+  targetBpm: Int
+  targetKey: CosoHarmonicModeKey
+  template: CosoCustomStackTemplate
+}
+
+type DBStack {
+  createdAt: DateTime
+  deletedAt: DateTime
+  ownerUuid: GUID
+  source: DBStackSource
+  stack: Stack
+  updatedAt: DateTime
+  uuid: GUID!
+  version: Int
+}
+
+type DBStackRef {
+  stackUuid: GUID!
+  version: Int!
+}
+
+input DBStackRefInput {
+  stackUuid: GUID!
+  version: Int!
+}
+
+type DBStackSource {
+  snapshotUuid: GUID
+  stackRef: DBStackRef
+}
+
+input DBStackSourceInput {
+  snapshotUuid: GUID
+  stackRef: DBStackRefInput
+}
+
+"""
+A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
+"""
+scalar DateTime
+
+type DawDevice implements IDevice {
+  asset: AnyAsset
+  device_type_slug: DeviceTypeSlug
+  minimum_device_version: String
+  name: String
+  uuid: GUID
+}
+
+"""Paged set of Devices"""
+type DevicePage {
+  """Subset of Devices"""
+  items: [IDevice]
+  response_metadata: ResponseMetadata
+}
+
+type DeviceSummary {
+  """The number of results with this device."""
+  count: Int
+  device: IDevice
+  deviceUuid: GUID
+}
+
+enum DeviceTypeSlug {
+  daw
+  plugin
+}
+
+type Dismissables {
+  dashboard: [String]
+  general: [String]
+  pack_recommendations: [String]
+  sounds: [String]
+  studio: [String] @deprecated(reason: "studio removal")
+}
+
+union DownloadableAsset = PresetAsset | SampleAsset
+
+"""
+A field whose value conforms to the standard internet email address format as specified in RFC822: https://www.w3.org/Protocols/rfc822/.
+"""
+scalar EmailAddress
+
+type EstimateStackKeyResult {
+  stackKey: StackKey
+}
+
+type ExportStackResult {
+  """
+  Archive manifest of the exported result (e.g. of an Ableton project).
+  The manifest should contain everything needed to assemble and deliver
+  the result to the user in a suitable format such as a ZIP file download.
+  """
+  manifest: ArchiveManifest
+
+  """
+  Copy of the Stack as it was exported, provided so the client can access
+  properties such as BPM, pitch shift, etc. if needed e.g. for stem rendering.
+  """
+  stack: Stack
+}
+
+type FAQLink {
+  link: String!
+  payload: SegmentPayloadData!
+  text: String!
+}
+
+type FeaturedPlanContentItem {
+  image: String!
+  text: [String!]!
+  title: String!
+}
+
+type FeaturedPlanTermsItem {
+  image: String!
+  mobileText: String
+  text: String!
+  title: String!
+}
+
+type FloatVector {
+  data: [Float!]
+  label: String
+  shape: [Int!]
+  uuid: GUID!
+}
+
+input FloatVectorInput {
+  data: [Float!]!
+  label: String
+  shape: [Int!]
+}
+
+type FrequentlyAskedQuestion {
+  analytics: FAQLink
+  content: String!
+  title: String!
+}
+
+scalar GUID
+
+type Gear {
+  canonical_url: String
+  hide: Boolean
+  id: ID!
+  is_free: Boolean
+  manufacturer: Manufacturer
+  name: String
+  prerelease: Boolean
+  tag_list: [String]
+  thumbnail_url: String
+  uuid: GUID!
+}
+
+type GearComponent {
+  gear_data: GearMetaData!
+  leasable_data: LeaseData!
+  type: String!
+}
+
+type GearEdition {
+  canonical_path: String!
+  installment_price: Int!
+  label: String!
+  plugin_description_id: Int!
+}
+
+type GearFeatureHighlights {
+  description: String
+  items: [GearMedia]!
+  title: String!
+}
+
+type GearImage implements GearMedia {
+  alt_text: String
+  description: String
+  order: Int
+  title: String
+  type: GearMediaType!
+  url: String!
+}
+
+interface GearMedia {
+  order: Int
+  type: GearMediaType!
+}
+
+enum GearMediaType {
+  image
+  video
+}
+
+type GearMetaData {
+  canonical_path: String!
+  display_name: String!
+  hide: Boolean!
+  id: String!
+  prerelease: Boolean!
+  thumbnail_url: String!
+}
+
+type GearSeo {
+  seo_description: String!
+  seo_title: String!
+  share_image_path: String!
+}
+
+type GearSpecifications {
+  max_activations: Int
+  specification_images: [String!]!
+  specification_text: String!
+  system_requirements: String!
+}
+
+type GearVideo implements GearMedia {
+  description: String
+  duration: Int
+  highlight_thumbnail: String
+  order: Int
+  thumbnail_url: String
+  title: String
+  type: GearMediaType!
+  upload_date: String
+  url: String!
+  youtube_id: String
+}
+
+"""Response from the search service"""
+type GetAssetsSearchResponse {
+  folder_summary: [AssetFolderSummary]
+
+  """uuids for the requested assets"""
+  items: [GUID]
+  response_metadata: ResponseMetadata
+  tag_summary: [TagSummary!]
+}
+
+type GetProofOfLicense {
+  downloadUrl: String!
+  record: ProofOfLicense
+}
+
+enum GrantAction {
+  convert_trial
+  resubscribe
+  resume
+  signin
+  subscribe
+  update_payment
+  upgrade
+}
+
+"""Type representing an HTTP header key/value pair"""
+type HttpHeader {
+  key: String!
+  value: String
+}
+
+enum HttpMethod {
+  CONNECT
+  DELETE
+  GET
+  HEAD
+  OPTIONS
+  PATCH
+  POST
+  PUT
+  TRACE
+}
+
+"""The common interface on all Assets in Splice's inventory"""
+interface IAsset {
+  activities: [AssetActivity]
+  asset_prices: [Price]
+  asset_status_slug: AssetStatusSlug
+  asset_type: AssetType
+  asset_type_slug: AssetTypeSlug
+
+  """Eg. if an asset is rare"""
+  attributes: [AssetAttributeSlug!]
+
+  """Eg, if asset is eligible for Presonus free bundled content"""
+  bundled_content_daws: [AssetBundledContentDawSlug!]
+  created_at: DateTime
+  description: String
+  files: [AssetFile!]
+
+  """
+  Ingestion issues associated with the asset and its children if applicable.
+  """
+  ingestion_issues: AssetIngestionIssues
+  legacy_permalink: String
+  licensed: Boolean
+  liked: Boolean
+  marketplace_status_slug: MarketplaceStatusSlug
+  name: String
+  permalink_base_url: String
+  permalink_slug: String
+  provider: Provider
+
+  """example: NG001"""
+  provider_sku: String
+  provider_uuid: GUID
+  tags: [Tag]
+  updated_at: DateTime
+  uuid: GUID!
+}
+
+"""
+An `IAssetChild` can have parents, and provides ways to query its parents
+"""
+interface IAssetChild {
+  """
+  A summary count of all parent assets of this asset, grouped by asset type.
+  """
+  parent_asset_counts: [RelatedAssetsCounts]
+
+  """A list of parent assets to this child asset"""
+  parent_asset_uuids: [GUID]
+
+  """
+  A query for parents of this asset. Only one asset type may be queried
+  at a time.
+  """
+  parents(filter: AssetFiltersInput!, pagination: CursorPaginationInput, sort: AssetSortInput): AssetPage
+  uuid: GUID!
+}
+
+"""
+An `IAssetParent` can have children, and provides ways to query its children.
+"""
+interface IAssetParent {
+  """An ordered list of which asset types can be children"""
+  allowed_asset_type_child: [AssetType]
+
+  """
+  A summary count of all child assets of this asset, grouped by asset type.
+  """
+  child_asset_counts: [RelatedAssetsCounts]
+
+  """A query for children of this asset."""
+  children(filter: AssetFiltersInput!, pagination: CursorPaginationInput, sort: AssetSortInput): AssetPage
+  cost: [AssetsCost!]
+  uuid: GUID!
+}
+
+interface ICollection {
+  creator: User
+  owned: Boolean
+  public: Boolean
+  subscriber_count: Int
+}
+
+interface IDevice {
+  device_type_slug: DeviceTypeSlug
+  minimum_device_version: String @deprecated(reason: "this never worked")
+  name: String
+  uuid: GUID
+}
+
+"""Additional fields on Assets existing in both legacy and catalog"""
+interface ILegacyAsset {
+  """Catalog asset UUID (if available)"""
+  catalog_uuid: GUID
+
+  """Identifier (UUID or file hash) for this asset in Legacy API"""
+  legacy_uuid: GUID
+}
+
+interface IPreset {
+  """The plugin that this preset is compatible with."""
+  device: PluginDevice
+}
+
+interface ISample {
+  asset_category_slug: AssetCategorySlug
+
+  """example: 174"""
+  bpm: Int
+
+  """example: minor"""
+  chord_type: String
+
+  """Duration in milliseconds"""
+  duration: Int
+  instrument: String
+
+  """example: f#"""
+  key: String
+}
+
+type InfluenceGenre {
+  bpm_high: Int
+  bpm_low: Int
+  description: String
+  id: ID!
+  name: String
+  permalink: String
+  seo_description: String
+  uuid: GUID!
+  year: Int
+}
+
+type Instructor {
+  name: String
+  uuid: GUID!
+}
+
+input InstructorCreateInput {
+  name: String
+}
+
+"""Paged set of Instructors"""
+type InstructorPage {
+  """Subset of Instructors"""
+  items: [Instructor]
+  response_metadata: ResponseMetadata
+}
+
+type IntercomUser {
+  hash: String
+}
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON
+
+enum LeasableGearCategoryInput {
+  essentials
+  new
+}
+
+type LeaseData {
+  created_at: DateTime!
+  discount_text: String
+  edition_level: String
+  full_price: Int!
+  has_upgrade: Boolean
+  installment_price: Int!
+  marketing_opt_in: Boolean
+  name: String!
+  plugin_description_id: String!
+  plugin_seller_code: String!
+  total_installments: Int!
+  trial_period_days: Int
+  uuid: GUID!
+}
+
+type LegacyAdminMutation {
+  addCompanionPack(group: CompanionPackGroupInput, pack: PackInput!, parentPackUuid: ID!): CompanionPackGroup
+  addPackStory(story: PackStoryInput!, uuid: ID!): LegacyPack2
+  addPackStoryVideo(uuid: ID!, video: PackStoryVideoInput): PackStoryVideo
+  deletePackStory(uuid: ID!): Boolean
+  publishPack(uuid: ID!): LegacyPack2
+  removeCompanionPack(group: CompanionPackGroupInput!, pack: PackInput!): CompanionPackGroup
+  reorderCompanionPackMembers(group: CompanionPackGroupInput!): CompanionPackGroup
+  unpublishPack(uuid: ID!): LegacyPack2
+  updatePackSamples(attributes: SampleInput!, mode: UpdateMode, packUuid: ID!): Boolean
+  updatePackStory(story: PackStoryInput!, uuid: ID!): PackStory
+  updateSample(sample: SampleInput!): Sample
+  updateSamples(attributes: SampleInput!, hashes: [ID!], mode: UpdateMode): Boolean
+}
+
+type LegacyAdminQuery {
+  pack(uuid: ID): LegacyPack2
+  packSamples(uuid: ID!): [Sample]
+  provider(uuid: ID!): LegacyProvider
+  providerPacks(filter: String!, order: String!, page: Int!, search: String!, sort: String!, uuid: ID!): PackSearchResponse
+}
+
+type LegacyPack {
+  cover_url: String
+  description: String
+  name: String!
+  uuid: ID!
+}
+
+type LegacyPack2 {
+  companion_pack_group: CompanionPackGroup
+  cover_path: String
+  cover_url: String
+  description: String
+  genre: String
+  name: String
+  permalink: String
+  preset_count: Int
+  provider: LegacyProvider
+  provider_uuid: String
+  published_at: String
+  sample_count: Int
+  story: PackStory
+  unpublished_sample_count: Int
+  uuid: ID
+}
+
+type LegacyPlanSubscription {
+  uuid: ID!
+}
+
+type LegacyProvider {
+  description: String
+  external_service: String
+  facebook_url: String
+  image_path: String
+  name: String
+  pack_count: Int
+  packs(filter: String!, order: String!, page: Int!, search: String!, sort: String!): PackSearchResponse
+  permalink: String
+  tags: [String]
+  twitter_url: String
+  url: String
+  uuid: ID
+  visible: Boolean
+}
+
+type LegacyRelease {
+  advertised: Boolean
+  artwork_background_url: String
+  artwork_url: String
+  canonical_path: String
+  canonical_url: String
+  collaborators: [String]
+  created_at: String
+  description: String
+  featured: Boolean
+  genre: String
+  is_published: Boolean
+  is_remix: Boolean
+  license: String
+  license_count: Int
+  like_count: Int
+  parent: LegacyReleaseParent
+  permalink: String
+  play_count: Int
+  player_background_url: String
+  preview_url: String
+  preview_uuid: String
+  read_only: Boolean
+  related_sources: [LegacyReleaseRelatedSource]
+  stem_count: Int
+  stems: [LegacyReleaseStem]
+  tags: Void
+  title: String
+  updated_at: String
+  user_avatar_url: String
+  user_id: Int
+  user_ids: [Int]
+  username: String
+  usernames: [String]
+  uuid: String!
+  vanity_url: String
+  waveform_url: String
+}
+
+type LegacyReleaseParent {
+  canonical_path: String
+  canonical_url: String
+  permalink: String
+  title: String
+  username: String
+  uuid: String!
+  vanity_url: String
+}
+
+type LegacyReleasePlugin {
+  canonical_path: String
+  canonical_url: String
+  id: Int!
+  is_free: Boolean
+  is_native: Boolean
+  is_purchasable: Boolean
+  manufacturer_name: String
+  name: String
+  screenshot_url: String
+  thumbnail_url: String
+}
+
+type LegacyReleaseRelatedSource {
+  bpm: Int
+  daw: String
+  daw_version: String
+  duration: String
+  is_origin: Boolean
+  plugins: [LegacyReleasePlugin]
+  plugins_count: Int
+  project_uuid: String
+  release_uuid: String
+  revision_uuid: String
+  sample_count: Int
+  samples_size: Int
+  seq_url: String
+}
+
+type LegacyReleaseStem {
+  api_path: String
+  duration: Int
+  name: String
+  track_id: Int
+  uuid: String!
+  waveform_url: String
+}
+
+type LegacyStudioFileEncoding {
+  decoded_format: String
+  decoded_hash: String
+  decoded_size: Int
+  name: String
+}
+
+type LegacyStudioProjectFile {
+  encoding: LegacyStudioFileEncoding
+  file_hash: String
+  file_size: Int
+  old_file_hash: String
+  path: String
+  sas_id: String
+  type: Int
+  url: URL
+}
+
+type LegacyStudioProjectFileCollection {
+  misc: [LegacyStudioProjectFile]
+  samples: [LegacyStudioProjectFile]
+  session: [LegacyStudioProjectFile]
+}
+
+type LegacyStudioRevision {
+  at: String
+  id: Int
+  username: String
+  uuid: GUID
+  version: Int
+}
+
+type LegacyStudioUser {
+  avatar_url: URL
+  id: Int
+  name: String
+  username: String
+}
+
+type LegacySubscriptionResponse {
+  next: LegacyPlanSubscription
+}
+
+type LessonAsset implements IAsset & IAssetParent {
+  activities: [AssetActivity]
+  allowed_asset_type_child: [AssetType]
+  asset_prices: [Price]
+  asset_status_slug: AssetStatusSlug
+  asset_type: AssetType
+  asset_type_slug: AssetTypeSlug
+
+  """Eg. if an asset is rare"""
+  attributes: [AssetAttributeSlug!]
+
+  """Eg, if asset is eligible for Presonus free bundled content"""
+  bundled_content_daws: [AssetBundledContentDawSlug!]
+  child_asset_counts: [RelatedAssetsCounts]
+  children(filter: AssetFiltersInput!, pagination: CursorPaginationInput, sort: AssetSortInput): AssetPage
+  cost: [AssetsCost!]
+  created_at: DateTime
+  description: String
+  devices: DevicePage @deprecated(reason: "Use devices_v2")
+
+  """Devices associated with the Lesson"""
+  devices_v2: [IDevice]
+  files: [AssetFile!]
+
+  """Ingestion issues associated with the asset and its children."""
+  ingestion_issues: AssetIngestionIssues
+  instructor_uuids: [GUID]
+
+  """Instructor will be used to represent the instructors"""
+  instructors: [Instructor]
+  legacy_permalink: String
+  licensed: Boolean
+  liked: Boolean
+  marketplace_status_slug: MarketplaceStatusSlug
+  name: String
+  permalink_base_url: String
+  permalink_slug: String
+  playlist: [GUID]
+  playlistVideos: [VideoAsset]
+  provider: Provider
+  provider_sku: String
+  provider_uuid: GUID
+  similar_assets(asset_type_slug: SimilarAssetTypeSlug!, limit: Int): AssetPage
+  subheader: String
+  tags: [Tag]
+  updated_at: DateTime
+  uuid: GUID!
+}
+
+type LicenseAssetChildrenResponse {
+  assets: [ChildAsset!]!
+  count: Int!
+  creditSpends: [CreditSpend!]
+}
+
+type Manufacturer {
+  canonical_path: String
+  description: String
+  id: String
+  logo_url: String
+  name: String
+  url: String
+}
+
+type ManufacturerUserAccount {
+  account_id: String
+  email: String
+}
+
+enum MarketplaceStatusSlug {
+  available
+  unavailable
+}
+
+type MerchContentBlock {
+  blockContentType: MerchContentBlockContentType
+  contentBlockStatus: MerchContentBlockStatus
+  contentItems: [MerchContentItem]
+  contentType: MerchContentType @deprecated(reason: "Use blockContentType")
+  content_block_status: MerchContentBlockStatus @deprecated(reason: "Use contentBlockStatus")
+  content_block_status_slug: MerchContentBlockStatusSlug @deprecated(reason: "Use contentBlockStatus.slug")
+  content_items: [MerchContentItem] @deprecated(reason: "Use contentItems")
+  content_type: MerchContentType @deprecated(reason: "Use contentType")
+  content_type_slug: MerchContentTypeSlug @deprecated(reason: "Use contentType.slug")
+  createdAt: DateTime
+  created_at: DateTime @deprecated(reason: "Use createdAt")
+  description: String
+  displayType: MerchContentBlockDisplayType
+  publishedAt: DateTime
+  title: String
+  unpublishedAt: DateTime
+  updatedAt: DateTime
+  updated_at: DateTime @deprecated(reason: "Use updatedAt")
+  uuid: GUID!
+}
+
+type MerchContentBlockContentType {
+  createdAt: DateTime
+  label: String!
+  slug: MerchContentBlockContentTypeSlug!
+  updatedAt: DateTime
+}
+
+enum MerchContentBlockContentTypeSlug {
+  default
+  recommended_for_you
+  trending_near_you
+}
+
+"""Input values used when creating a brand new Content Block."""
+input MerchContentBlockCreateInput {
+  """content_block_status_slug will default to unpublished"""
+  content_block_status_slug: MerchContentBlockStatusSlug
+  content_type_slug: MerchContentTypeSlug!
+
+  """Pass content_uuids in sorted order"""
+  content_uuids: [GUID]
+  description: String
+  display_type_slug: MerchContentBlockDisplayTypeSlug
+  publishedAt: DateTime
+  title: String!
+  unpublishedAt: DateTime
+}
+
+type MerchContentBlockDisplayType {
+  createdAt: DateTime
+  label: String!
+  slug: MerchContentBlockDisplayTypeSlug!
+  updatedAt: DateTime
+}
+
+enum MerchContentBlockDisplayTypeSlug {
+  banner_carousel
+  card_carousel
+}
+
+type MerchContentBlockStatus {
+  createdAt: DateTime
+  created_at: DateTime @deprecated(reason: "Use createdAt")
+  id: Int @deprecated(reason: "Use slug")
+  label: String
+  slug: MerchContentBlockStatusSlug
+  updatedAt: DateTime
+  updated_at: DateTime @deprecated(reason: "Use updatedAt")
+}
+
+enum MerchContentBlockStatusSlug {
+  published
+  unpublished
+}
+
+"""Input values used when updating Content Block."""
+input MerchContentBlockUpdateInput {
+  """content_block_status_slug will default to unpublished"""
+  content_block_status_slug: MerchContentBlockStatusSlug
+  content_type_slug: MerchContentTypeSlug!
+  description: String
+  publishedAt: DateTime
+  title: String!
+  unpublishedAt: DateTime
+  uuid: GUID!
+}
+
+type MerchContentItem {
+  bannerImagePath: String
+  cardImagePath: String
+  content: AnyAsset
+  contentType: MerchContentType @deprecated(reason: "Use itemContentType")
+  contentUrl: String
+  contentUuid: GUID
+  content_type: MerchContentType @deprecated(reason: "Use contentType")
+  content_type_slug: MerchContentTypeSlug @deprecated(reason: "Use contentType.slug")
+  content_uuid: GUID @deprecated(reason: "Use contentUuid")
+  createdAt: DateTime
+  created_at: DateTime @deprecated(reason: "Use createdAt")
+  description: String
+  itemContentType: MerchContentItemContentType
+  publishedAt: DateTime
+  title: String
+  unpublishedAt: DateTime
+  updatedAt: DateTime
+  updated_at: DateTime @deprecated(reason: "Use updatedAt")
+  uuid: GUID!
+}
+
+type MerchContentItemContentType {
+  createdAt: DateTime
+  label: String!
+  slug: MerchContentItemContentTypeSlug!
+  updatedAt: DateTime
+}
+
+enum MerchContentItemContentTypeSlug {
+  collection_asset
+  feature_url
+  lesson_asset
+  pack_asset
+  video_asset
+}
+
+"""Input values used when creating a brand new Content Item."""
+input MerchContentItemCreateInput {
+  bannerImagePath: String
+  cardImagePath: String
+  contentItemContentTypeSlug: MerchContentItemContentTypeSlug!
+  contentUrl: String
+
+  """
+  contentUuid optionally references an existing catalog asset_uuid
+  and is not needed for feature_url type content items.
+  """
+  contentUuid: GUID
+  description: String
+  publishedAt: DateTime
+  title: String
+  unpublishedAt: DateTime
+}
+
+type MerchContentLookup {
+  refType: MerchContentRefType!
+  uuid: GUID
+}
+
+enum MerchContentRefType {
+  collection
+  lesson
+  pack
+  tag
+  unspecified
+  video
+}
+
+type MerchContentType {
+  createdAt: DateTime
+  created_at: DateTime @deprecated(reason: "Use createdAt")
+  id: Int @deprecated(reason: "Clients do not need ID fields on enums. Use slug instead.")
+  label: String
+  slug: MerchContentTypeSlug
+  updatedAt: DateTime
+  updated_at: DateTime @deprecated(reason: "Use updatedAt")
+}
+
+enum MerchContentTypeSlug {
+  lesson_asset
+  video_asset
+}
+
+input MerchGetPagesInput {
+  """UUID of Asset, Tag, or other Content associated with a page"""
+  contentUuid: String
+  pageTypeSlug: String
+  slug: String
+}
+
+type MerchPage {
+  contentBlocks: [MerchContentBlock]
+  contentLookup: MerchContentLookup
+  content_blocks: [MerchContentBlock] @deprecated(reason: "Use contentBlocks")
+  createdAt: DateTime
+  created_at: DateTime @deprecated(reason: "Use createdAt")
+  heading: String
+  onPageCopy: String
+  pageType: MerchPageType
+  seoDescription: String
+  seoTitle: String
+  slug: String
+  subheading: String
+  title: String
+  updatedAt: DateTime
+  updated_at: DateTime @deprecated(reason: "Use updatedAt")
+  uuid: GUID!
+}
+
+"""Input values used when updating Pages."""
+input MerchPageCreateInput {
+  """
+  contentUuid associates page with an asset, tag, or other piece of content (specified through PageType)
+  """
+  contentUuid: GUID
+  heading: String
+  onPageCopy: String
+  pageType: MerchPageType
+  seoDescription: String
+  seoTitle: String
+  slug: String!
+  subheading: String
+  title: String!
+}
+
+input MerchPageDeleteInput {
+  slug: String!
+}
+
+type MerchPagePage {
+  items: [MerchPage]
+}
+
+enum MerchPageType {
+  collection
+  genre
+  instrument
+  lesson
+  pack
+  unspecified
+  video
+}
+
+input MerchPageUpdateInput {
+  heading: String
+  onPageCopy: String
+  seoDescription: String
+  seoTitle: String
+  slug: String!
+  subheading: String
+  title: String!
+}
+
+type MidiAsset implements IAsset & IAssetChild {
+  activities: [AssetActivity]
+  asset_prices: [Price]
+  asset_status_slug: AssetStatusSlug
+  asset_type: AssetType
+  asset_type_slug: AssetTypeSlug
+
+  """Eg. if an asset is rare"""
+  attributes: [AssetAttributeSlug!]
+  bpm: Int
+
+  """Eg, if asset is eligible for Presonus free bundled content"""
+  bundled_content_daws: [AssetBundledContentDawSlug!]
+  chord_type: String
+  created_at: DateTime
+  description: String
+  files: [AssetFile!]
+
+  """Ingestion issues associated with the asset."""
+  ingestion_issues: AssetIngestionIssues
+  key: String
+  legacy_permalink: String
+  licensed: Boolean
+  liked: Boolean
+  marketplace_status_slug: MarketplaceStatusSlug
+  name: String
+  parent_asset_counts: [RelatedAssetsCounts]
+  parent_asset_uuids: [GUID]
+  parents(filter: AssetFiltersInput!, pagination: CursorPaginationInput, sort: AssetSortInput): AssetPage
+  permalink_base_url: String
+  permalink_slug: String
+  provider: Provider
+  provider_sku: String
+  provider_uuid: GUID
+  tags: [Tag]
+  updated_at: DateTime
+  uuid: GUID!
+}
+
+type Mutation {
+  """Adds an Asset to a collection"""
+  addAssetToCollection(assetUuid: GUID!, collectionUuid: GUID!, legacy: AssetLegacyInput): AddAssetToCollection
+  asyncBulkPublish(filters: BulkAssetUpdateFilters!): PublishAssetResponse
+
+  """
+  Triggers publishing job for list of assets.
+  Check the status of the job by calling the `catalogJob` Query.
+  """
+  asyncPublish(uuid: GUID!): PublishAssetResponse
+
+  """Bulk adds assets to a collection"""
+  bulkAddAssetsToCollection(assets: BulkAssetActionInput!, collectionUuid: GUID!, legacy: AssetLegacyInput): BulkAddAssetsToCollection
+
+  """Bulk deletes Assets with a Delete"""
+  bulkDeleteAssets(filters: BulkAssetUpdateFilters!): Void
+
+  """Bulk likes assets"""
+  bulkLikeAssets(assets: BulkAssetActionInput, legacy: AssetLegacyInput): Void
+
+  """Bulk Publish Asset with a PUT"""
+  bulkPublishAssets(asset_status_slug: AssetStatusSlug!, filters: BulkAssetUpdateFilters!): BulkPublishResponse
+
+  """Bulk Updates Asset with a PUT"""
+  bulkUpdateAssets(changes: BulkAssetUpdateInput!, filters: BulkAssetUpdateFilters!): Void
+
+  """
+  Converts the subscription for the given uuid to one scheduled to cancel
+  """
+  cancelSubscription(cancelReasons: PlanSubscriptionCancelReasonInput, subscriptionUUID: ID!): PlanSubscription
+  clearErrorsForAsset(assetUuid: GUID!, errorLevel: AssetErrorLevel!): Void
+
+  """Converts the trial subscription for the given uuid to an active one"""
+  convertTrialToSubscription(subscriptionUUID: ID!): PlanSubscription
+
+  """Creates a new Asset"""
+  createAsset(asset: AssetCreateInput!, legacy: AssetLegacyInput): AnyAsset
+
+  """Creates files like cover image or waveform for an Asset"""
+  createAssetFile(file: Upload!, slug: String!, uuid: GUID!): AnyAsset
+
+  """Creates a new Collection"""
+  createCollection(description: String!, name: String!): CollectionAsset
+
+  """Creates a new Device"""
+  createDevice(device_type_slug: String, name: String): IDevice
+
+  """Creates a new Instructor"""
+  createInstructor(name: String): Instructor
+
+  """Creates a new Content Block"""
+  createMerchContentBlock(input: MerchContentBlockCreateInput!): MerchContentBlock
+
+  """Creates a new Content Item"""
+  createMerchContentItem(input: MerchContentItemCreateInput!): MerchContentItem
+  createMerchPage(input: MerchPageCreateInput!): MerchPage
+  createProofOfLicense(artistName: String!, assetUuids: [String!]!, fullLegalName: String!): CreateProofOfLicense
+  createStack(source: DBStackSourceInput, stack: StackInput!): DBStack
+  createStacksClip(clip: StacksClipInput!): StacksClip
+  createStacksSession(session: StacksSessionInput!): StacksSession
+  createStudioOneUploadJob(bpm: Int, durationMs: Int, fileName: String!): UserAudioUploadUrl
+
+  """Creates a new tag"""
+  createTag(tag: TagInput!): Tag
+
+  """Creates a new taxonomy"""
+  createTaxonomy(taxonomy: TaxonomyCreateInput!): Taxonomy
+
+  """
+  Creates a UserAudioFileUploadJob and returns a signed upload url and job_uuid
+  """
+  createUserAudioUploadJob(bpm: Int, fileName: String!, source: UserAudioFileSource): UserAudioUploadUrl
+
+  """Deletes an Asset with a Delete"""
+  deleteAsset(asset: GUID!, legacy: AssetLegacyInput): Void
+
+  """Deletes a file like cover image or waveform for an Asset"""
+  deleteAssetFile(asset_file_uuid: GUID, uuid: GUID): AnyAsset
+
+  """Deletes a Collection"""
+  deleteCollection(uuid: GUID!): Void
+  deleteMerchContentBlock(uuid: GUID!): Void
+  deleteMerchPage(input: MerchPageDeleteInput!): Void
+  deleteStack(uuid: GUID!): Void
+  deleteStacksClip(uuid: GUID!): Void
+  deleteStacksSession(uuid: GUID!): Void
+  deleteUser: Void
+
+  """Downgrades to the given plan."""
+  downgradeSubscription(planUUID: ID!, subscriptionUUID: ID!): PlanSubscription
+  duplicateStack(newStackName: String, stackUuid: GUID!): DBStack
+
+  """exportStack exports the given stack e.g. as a DAW project manifest"""
+  exportStack(exportTypeSlug: String, stackUuid: GUID!): ExportStackResult
+  getProofOfLicense(includeDownloadUrl: Boolean!, uuid: String!): GetProofOfLicense
+  legacyAdmin: LegacyAdminMutation
+
+  """License multiple assets from a pack or collection of assets"""
+  licenseAssetChildren(
+    """
+    A list of all child asset types we want to license.
+    This allows us to specify only assets the user is interested
+    in, for instance only licensing samples and not presets.
+    """
+    children_types: [AssetTypeSlug!]!
+
+    """
+    Current backends may not be able to figure out the parent asset
+    type from a GUID alone, so we need this hint
+    """
+    parent_type: AssetTypeSlug!
+
+    """GUID of the parent asset"""
+    uuid: GUID!
+  ): LicenseAssetChildrenResponse
+
+  """Likes an Asset"""
+  likeAsset(legacy: AssetLegacyInput, uuid: GUID!): AnyAsset
+
+  """Pauses the given subscription for the given duration"""
+  pauseSubscription(pauseDuration: Int = 1, subscriptionUUID: ID!): PlanSubscription
+
+  """Purchase an Asset"""
+  purchaseAsset(legacy: AssetLegacyInput, uuid: GUID!): AnyAsset
+
+  """
+  Purchase a list of Assets
+  
+  Note: this is not just a plural version of purchaseAsset. This query accepts _only_
+  catalog/platform UUIDs, and returns a list of CreditSpend objects rather than assets.
+  The assets themselves are available via the CreditSpend.asset resolver if needed.
+  """
+  purchaseAssets(legacy: Boolean, uuids: [GUID!]!): [CreditSpend]
+
+  """Initiates the purchase of credits"""
+  purchaseCredits(creditsNeeded: Int, packUUID: GUID!): CreditsPurchaseResponse
+
+  """Removes an Asset from a collection"""
+  removeAssetFromCollection(assetUuid: GUID!, collectionUuid: GUID!, legacy: AssetLegacyInput): RemoveAssetFromCollection
+  resetPassword(email: String!): Void
+
+  """Resuscribe to a new plan"""
+  resubscribe(planUUID: ID!, promoCode: String): PlanSubscription
+  setAssetUploadStatus(assetJobState: AssetJobState!, assetUuid: GUID!, jobUuid: GUID): AssetUploadStatus
+  shareStack(input: ShareStackInput!): ShareStackResult
+
+  """
+  Converts and downgrades the trial subscription to an active one on the given plan
+  """
+  startAndDowngradeSubscription(planUUID: ID!, subscriptionUUID: ID!): PlanSubscription
+
+  """
+  Converts and upgrades the trial subscription to an active one on the given plan
+  """
+  startAndUpgradeSubscription(planUUID: ID!, subscriptionUUID: ID!): PlanSubscription
+
+  """Converts the trial subscription for the given uuid to an active one"""
+  startSubscription(subscriptionUUID: ID!): PlanSubscription
+
+  """Starts a new subscription in trial for the given plan"""
+  startTrial(planUUID: ID!, promoCode: String): PlanSubscription
+  studioTemplatesClone(name: String!, type: String!): V2ProjectManifest
+
+  """Starts a new subscription in trial for the given plan"""
+  subscribe(planUUID: ID!, promoCode: String): PlanSubscription
+
+  """Subscribe To Collection"""
+  subscribeToCollection(permalink: String!, uuid: GUID!): CollectionAsset
+
+  """Switches a sounds plan to a splice plan"""
+  switchToSplicePlan(planUUID: ID!, promoCode: String, subscriptionUUID: ID!): PlanSubscription
+  sync(version: Int!): TaxonomySync
+
+  """
+  Updates a Splice User with a connected Discord account to have a role that matches
+  their plan state.
+  """
+  syncDiscordRoleWithSubscription(userUUID: GUID!): SyncDiscordRoleWithSubscriptionResult
+
+  """
+  Uncancels a currently canceled or cancellation-scheduled subscription for the
+  given uuid and subscribes to a new lower plan.
+  """
+  uncancelAndDowngradeSubscription(subscriptionUUID: ID!): PlanSubscription
+
+  """
+  Uncancels a currently canceled or cancellation-scheduled subscription for the
+  given uuid and subscribes to a new higher plan.
+  """
+  uncancelAndUpgradeSubscription(subscriptionUUID: ID!): PlanSubscription
+
+  """
+  Uncancels a currently canceled or cancellation-scheduled subscription for the
+  given uuid and returns an active one
+  """
+  uncancelSubscription(subscriptionUUID: ID!): PlanSubscription
+
+  """Unlikes an Asset"""
+  unlikeAsset(legacy: AssetLegacyInput, uuid: GUID!): AnyAsset
+
+  """
+  Unlinks a Discord Account from a Splice User UUID and removes all plan-related roles from the previously
+  linked Discord Account
+  """
+  unlinkDiscordUser(userUUID: GUID!): Void
+
+  """
+  Unpauses a currently paused or pause-scheduled subscription and returns an
+  active one
+  """
+  unpauseSubscription(subscriptionUUID: ID!): PlanSubscription
+
+  """Unsubscribe From Collection"""
+  unsubscribeFromCollection(permalink: String!, uuid: GUID!): CollectionAsset
+
+  """Updates an Asset with a Put"""
+  updateAsset(asset: AssetUpdateInput!, legacy: AssetLegacyInput): UpdateAssetResponse
+
+  """Updates Activity Status with a Post"""
+  updateAssetActivityStatus(legacy: AssetLegacyInput, status: ActivityTypeSlug!, uuid: GUID!): Void
+  updateAssetStatus(status: AssetStatusSlug!, uuid: GUID!): PublishResponse
+
+  """Updates a Collection"""
+  updateCollection(description: String, name: String, public: Boolean, uuid: String!): CollectionAsset
+  updateMerchContentBlock(input: MerchContentBlockUpdateInput!): MerchContentBlock
+  updateMerchContentBlocksOrder(contentBlocksUuids: [GUID], pageSlug: String!): [MerchContentBlock]
+  updateMerchContentItemsOrder(contentBlockUuid: GUID!, contentItemsUuids: [GUID]): [MerchContentItem]
+  updateMerchPage(input: MerchPageUpdateInput!): MerchPage
+  updateStack(latestVersion: Int!, stack: StackInput!, uuid: GUID!): DBStack
+  updateStacksClip(input: StacksClipUpdateInput!): StacksClip
+  updateStacksSession(session: StacksSessionInput!): StacksSession
+
+  """Updates an existing taxonomy"""
+  updateTag(tag: TagInput!): Tag
+  updateUser(user: UserUpdateInput!): User
+
+  """Upgrades to the given plan."""
+  upgradeSubscription(planUUID: ID!, subscriptionUUID: ID!): PlanSubscription
+
+  """Uploads an Asset with a Post"""
+  uploadAsset(asset: AssetUploadInput!): Void
+  v2ProjectCollaboratorsDelete(username: String!, uuid: GUID!): Void
+  v2ProjectCollaboratorsPost(username: String!, uuid: GUID!): Void
+  v2ProjectDelete(uuid: GUID!): Void
+  v2ProjectRevisionPatch(description: String!, revId: GUID!, starred: Boolean, uuid: GUID!): Void
+  wwwLikePack(permalink: String, uuid: ID): WWWPack
+  wwwMeFollowingDelete(id: Int!): Void
+  wwwMeFollowingPost(captcha_token: String, id: Int!): Void
+  wwwReleasesLikesDelete(uuid: ID): Void
+  wwwReleasesLikesPost(captcha_token: String, uuid: ID): Void
+  wwwReleasesPlaysPost(uuid: ID): Void
+  wwwUnLikePack(permalink: String, uuid: ID): WWWPack
+}
+
+input NewStackInput {
+  customStackTemplate: CosoCustomStackTemplateInput
+  estimateKey: Boolean
+  harmonicMode: Boolean
+  harmonicModeAudioKey: String
+  harmonicModeChordType: String
+  harmonicModeFirstLayerWeight: Float
+  harmonicModeOffset: Int
+  harmonicModePersistWeight: Float
+  harmonicModeVersion: String
+  numLayers: Int
+  randomize: Boolean
+  randomizeDefaultLayerOrder: Boolean
+
+  """below are experimental parameters"""
+  randomizeTopHitOffsetMax: Int
+  seed: CosoSeedInput
+  stackBpm: Int
+  stackTemplate: String
+}
+
+type NewStackLayerV2Result {
+  layers: [StackLayer]
+  stackKey: StackKey
+}
+
+type NewStackWithPromptResult {
+  prompt: String
+  stack: Stack
+  template: CosoCustomStackTemplate
+}
+
+type PackAsset implements IAsset & IAssetParent & ILegacyAsset {
+  activities: [AssetActivity]
+  allowed_asset_type_child: [AssetType]
+  asset_prices: [Price]
+  asset_status_slug: AssetStatusSlug
+  asset_type: AssetType
+  asset_type_slug: AssetTypeSlug
+
+  """Eg. if an asset is rare"""
+  attributes: [AssetAttributeSlug!]
+
+  """Eg, if asset is eligible for Presonus free bundled content"""
+  bundled_content_daws: [AssetBundledContentDawSlug!]
+  catalog_uuid: GUID
+  child_asset_counts: [RelatedAssetsCounts]
+  children(filter: AssetFiltersInput!, pagination: CursorPaginationInput, sort: AssetSortInput): AssetPage
+  companion_packs: [PackAsset!]
+  cost: [AssetsCost!]
+  created_at: DateTime
+  current_global_chart_pos: Int
+  current_label_chart_pos: Int
+  description: String
+  files: [AssetFile!]
+
+  """Ingestion issues associated with the asset and its children."""
+  ingestion_issues: AssetIngestionIssues
+  last_global_chart_pos: Int
+  last_label_chart_pos: Int
+  legacy_permalink: String
+  legacy_uuid: GUID
+  licensed: Boolean
+  liked: Boolean
+  main_genre: String
+  marketplace_status_slug: MarketplaceStatusSlug
+  name: String
+  permalink_base_url: String
+  permalink_slug: String
+  provider: Provider
+  provider_sku: String
+  provider_uuid: GUID
+  story: PackAssetStory
+  tags: [Tag]
+  updated_at: DateTime
+  uuid: GUID!
+}
+
+type PackAssetStory {
+  background_url: String
+  description: String
+  title: String
+  uuid: ID
+  videos: [PackAssetStoryVideo!]
+}
+
+type PackAssetStoryVideo {
+  background_url: String
+  url: String
+}
+
+input PackInput {
+  name: String
+  permalink: String
+  uuid: String
+}
+
+input PackSearchParams {
+  likes: Boolean
+  packsOnly: Boolean
+  page: Int
+  perPage: Int
+  requiresPresets: Boolean
+  requiresSamples: Boolean
+  variant: String
+  withSamples: Boolean
+}
+
+type PackSearchResponse {
+  filtered_count: Int!
+  packs: [LegacyPack2]
+  total_count: Int!
+}
+
+type PackStory {
+  background_url: String
+  description: String
+  title: String
+  uuid: ID
+  videos: [PackStoryVideo]
+}
+
+input PackStoryInput {
+  background_url: String
+  description: String
+  title: String
+  uuid: ID
+}
+
+type PackStoryVideo {
+  background_url: String
+  url: String
+  uuid: ID
+}
+
+input PackStoryVideoInput {
+  background_url: String
+  url: String
+  uuid: ID
+}
+
+"""Pagination metadata response."""
+type PaginationMetadata {
+  """Current Page"""
+  currentPage: Int
+
+  """Total Number of Pages"""
+  totalPages: Int
+}
+
+union ParentAsset = CollectionAsset | LessonAsset | PackAsset
+
+type PaymentMethod {
+  address: PaymentMethodAddress
+}
+
+type PaymentMethodAddress {
+  address_city: String @deprecated(reason: "No longer used. Only zip and country are required")
+  address_country: String
+  address_line_1: String @deprecated(reason: "No longer used. Only zip and country are required")
+  address_line_2: String @deprecated(reason: "No longer used. Only zip and country are required")
+  address_state: String @deprecated(reason: "No longer used. Only zip and country are required")
+  address_zip: String
+}
+
+input PaymentMethodAddressInput {
+  address_country: String
+  address_zip: String
+}
+
+type Permission {
+  flag: String
+  grantActions: [GrantAction!]
+  name: String!
+  value: Boolean!
+}
+
+type PermissionsResponse {
+  permissions: [Permission!]
+}
+
+type Plan {
+  billing_frequency: BillingFrequencySlug
+  code: String
+  credits: Int @deprecated(reason: "Use monthly_credits")
+  description: String @deprecated(reason: "Use plan_details.description")
+  display_name: String
+  features: [String] @deprecated(reason: "Use plan_details.plan_features instead")
+  features_title: String @deprecated(reason: "Use plan_details.features_title")
+  group: PlanGroup
+  monthly_credits: Int
+  name: String
+  plan_details: PlanDetails
+  plan_features: [PlanFeature!] @deprecated(reason: "Use plan_details.plan_features instead")
+  plan_select_table_values: [PlanSelectTableValues]
+  price: PlanPrices
+  pricing_model: String
+  promo_codes(campaign: String): [PromoCode]
+  ramp_duration: Int
+  ramp_price: PlanPrices
+  show_disclaimer: Boolean
+  thumbnail_url: String @deprecated(reason: "Use plan_details.thumbnail_url")
+  tier: Int
+  trial_length_days: Int
+  uuid: ID
+}
+
+type PlanDetails {
+  description: String
+  features_title: String
+  plan_features: [PlanFeature!]
+  thumbnail_url: String
+}
+
+type PlanFeature {
+  flags: [String!]
+  text: String!
+}
+
+type PlanGroup {
+  description: String
+  display_name: String
+  exclusions: [PlanGroupSlug]
+  name: PlanGroupSlug
+}
+
+enum PlanGroupSlug {
+  daw
+  sounds
+  splice
+}
+
+type PlanPrices {
+  usd: Int
+}
+
+"""
+Plan Select encaspulates marketing details for plans.
+Focusing on presentation of features without regard to subscription management or processing.
+"""
+type PlanSelectTableHeader {
+  header: String
+  key: String
+  tooltip: String
+}
+
+type PlanSelectTableValues {
+  info: String
+  key: String
+  value: String
+}
+
+type PlanSubscription {
+  account_type: String
+  account_uuid: String
+  credits: Int
+  expires_at: String
+  next: LegacyPlanSubscription
+  plan: Plan
+  plan_uuid: ID!
+  resume_at: String
+  state: SubscriptionState!
+  trial_converted_at: String
+  uuid: ID!
+}
+
+input PlanSubscriptionCancelReasonInput {
+  category_id: Int
+  user_text: String
+}
+
+type PlansPageCopy {
+  CTA: String!
+  higherCTA: String!
+  lowerCTA: String!
+  subtitle: String!
+  title: String!
+}
+
+input PlansPageFlagEvaluation {
+  key: String
+  value: String
+}
+
+type PlansResponse {
+  disclaimer: String
+  items: [Plan!]
+  plan_select_table_headers: [PlanSelectTableHeader]
+}
+
+interface PluginDescription {
+  background_url: String!
+  canonical_url: String!
+  description: String!
+  hide: Boolean!
+  id: Int!
+  is_free: Boolean!
+  manufacturer: Manufacturer!
+  name: String!
+  prerelease: Boolean
+  price: Int
+  purchase_type: PurchaseType
+  retail_url: String
+  screenshot_url: String!
+  seller_code: String!
+  tag_list: [String]
+  thumbnail_url: String!
+  types: [String!]!
+  uuid: String!
+}
+
+type PluginDevice implements IDevice {
+  asset: AnyAsset
+  device_type_slug: DeviceTypeSlug
+  minimum_device_version: String
+  name: String
+  plugin_type: PluginType
+  uuid: GUID
+  versions: [String]
+}
+
+type PluginInfo {
+  thumbnail_url: String
+}
+
+enum PluginType {
+  AAX
+  AU
+  FL
+  MAX
+  VST
+  VST3
+}
+
+type PresetAsset implements IAsset & IAssetChild & ILegacyAsset & IPreset {
+  activities: [AssetActivity]
+  asset_devices: [AssetDevice]
+  asset_prices: [Price]
+  asset_status_slug: AssetStatusSlug
+  asset_type: AssetType
+  asset_type_slug: AssetTypeSlug
+
+  """Eg. if an asset is rare"""
+  attributes: [AssetAttributeSlug!]
+
+  """Eg, if asset is eligible for Presonus free bundled content"""
+  bundled_content_daws: [AssetBundledContentDawSlug!]
+  catalog_uuid: GUID
+  created_at: DateTime
+  description: String
+  device: PluginDevice
+  files: [AssetFile!]
+
+  """Ingestion issues associated with the asset."""
+  ingestion_issues: AssetIngestionIssues
+  legacy_permalink: String
+  legacy_uuid: GUID
+  licensed: Boolean
+  liked: Boolean
+  marketplace_status_slug: MarketplaceStatusSlug
+  name: String
+  parent_asset_counts: [RelatedAssetsCounts]
+  parent_asset_uuids: [GUID]
+  parents(filter: AssetFiltersInput!, pagination: CursorPaginationInput, sort: AssetSortInput): AssetPage
+  permalink_base_url: String
+  permalink_slug: String
+  provider: Provider
+  provider_sku: String
+  provider_uuid: GUID
+  tags: [Tag]
+  updated_at: DateTime
+  uuid: GUID!
+}
+
+"""
+A reference to a preset's compatible Plugin
+FIXME: There is likely a more verbose "Plugin" type that should be used instead.
+"""
+type PresetPluginReference {
+  name: String
+  plugin: PluginDevice
+  uuid: GUID!
+}
+
+"""
+FIXME: This looks like it's wrong. I believe this should be more like AssetFileType
+"""
+enum PreviewType {
+  AUDIO
+  BANNER_IMAGE
+  COVER_IMAGE
+  VIDEO
+}
+
+type Price {
+  amount: Int
+  currency: Currency
+}
+
+input PricingFlagEvaluation {
+  key: String
+  value: String
+}
+
+enum PricingModel {
+  fixed
+  ramp
+}
+
+type PromoCode {
+  campaign: String
+  coupon_code: String
+  coupon_type: CouponType
+  description: String
+  plan_code: String
+}
+
+type ProofOfLicense {
+  artistName: String!
+  assetUuids: [String!]!
+  fullLegalName: String!
+  licenseIssued: String!
+  userUuid: String!
+  uuid: String!
+}
+
+type Provider {
+  created_at: DateTime
+  current_provider_chart_position: Int
+  description: String
+  external_service: String
+  facebook_url: String
+  image_path: String
+  last_provider_chart_position: Int
+  legacy_uuid: GUID
+  name: String
+  pack_count(include_unpublished: Boolean): Int
+  permalink_slug: String
+  tags: String
+  tags_array: [String]
+  twitter_url: String
+  updated_at: DateTime
+  url: String
+  uuid: GUID!
+  visible: Boolean
+}
+
+"""Paged set of Providers"""
+type ProviderPage {
+  """Subset of Providers"""
+  items: [Provider]
+}
+
+type PublishAssetResponse {
+  job_uuid: GUID
+}
+
+type PublishError {
+  asset_name: String!
+  asset_type: AssetTypeSlug!
+  asset_uuid: GUID!
+  error: String!
+}
+
+type PublishResponse {
+  errors: [PublishError]!
+  requested_status: AssetRequestedStatus!
+  result: AssetPublishResult!
+}
+
+enum PublishState {
+  ACCEPTED
+  REJECTED
+}
+
+enum PurchaseType {
+  free
+  included_only_in_bundle
+  offsite_purchase
+  one_time_purchase
+  rent_to_own
+  rent_to_own_upgrade
+}
+
+"""
+This is the root query. Subsections of the graph use `extend` to place their
+own fields here.
+"""
+type Query {
+  """A single Asset by ID"""
+  asset(includePlaylist: Boolean, legacy: AssetLegacyInput, uuid: GUID!): AnyAsset
+
+  """An array of asset category enums in the system."""
+  assetCategories(asset_type_slug: AssetTypeSlug): [AssetCategory]
+
+  """An array of asset file type enums in the system."""
+  assetFileTypes: [AssetFileType]
+
+  """A list of files for each of the given assets"""
+  assetFiles(assetFileTypeSlug: String, assetUuids: [GUID!]!, desktopPreview: Boolean): [AssetFilesList]
+
+  """An array of asset status type enums in the system."""
+  assetStatuses: [AssetStatus]
+
+  """An array of asset type enums in the system."""
+  assetTypes: [AssetType]
+
+  """Gets status for uploaded Asset"""
+  assetUploadStatus(uuid: GUID!): AssetUploadStatus
+
+  """A page of Assets matching the given inputs."""
+  assets(
+    """Optional UUID for searches performed with autocomplete suggestion"""
+    ac_uuid: String
+
+    """
+    Filter Sample assets by a specific `asset_category_slug`.
+      any category set: 'loop'
+      no category set: 'NOT_SET'
+    """
+    asset_category_slug: AssetCategorySlug
+
+    """Status of assets to return in response"""
+    asset_status_slug: AssetStatusSlug
+
+    """Types of assets to return in response"""
+    asset_type_slug: AssetTypeSlug!
+
+    """
+    Filter Sample assets by a specific `bpm`.
+      equal bpm: '120'
+      not equal bpm: '!120'
+      any bpm set: 'IS_SET'
+      no bpm set: 'NOT_SET'
+    """
+    bpm: String
+
+    """Return all parents of a child"""
+    child_asset_uuid: GUID
+
+    """
+    Chord types: major, minor
+      equal chord: 'major'
+      not equal chord: '!major'
+      any chord set: 'IS_SET'
+      no chord set: 'NOT_SET'
+    """
+    chord_type: String
+
+    """
+    An identifier for where in the total results to begin to return records.
+    """
+    cursor: String
+
+    """
+    Only return assets associated with a particular device eg. "serum"
+    """
+    device_name: String
+
+    """Asset Device GUID"""
+    device_uuids: [GUID]
+
+    """Only return assets that match a filepath"""
+    filepath: String
+
+    """
+    Only return assets associated with a genre e.g. "trap"
+    """
+    genre: String
+
+    """Only return assets that have errors"""
+    has_errors: Boolean
+
+    """Only return assets that have warnings"""
+    has_warnings: Boolean
+    include_inherited_tags: Boolean
+
+    """Asset Instructor GUID"""
+    instructor_uuids: [GUID]
+
+    """
+    Sample assets in `key`.
+      equal key: 'a#'
+      not equal key: '!a#'
+      any key set: 'IS_SET'
+      no key set: 'NOT_SET'
+    """
+    key: String
+
+    """Query the catalog using behavior from the Splice Legacy API"""
+    legacy: Boolean
+
+    """
+    Return only content that the Authenticated User has a license to use. This is filtered by default.
+    """
+    licensed: Boolean
+
+    """
+    Return only content that the Authenticated User liked/did not like. This is not filtered by default.
+    """
+    liked: Boolean
+
+    """Number of records to return in a single request."""
+    limit: Int
+
+    """Filter Sample assets with a maximum `bpm`. Example: 140."""
+    max_bpm: Int
+
+    """Filter Sample assets with a minimum `bpm`. Example: 120."""
+    min_bpm: Int
+    name: String
+    name_exclude: String
+
+    """asc or desc"""
+    order: SortOrder
+
+    """
+    An identifier for where in the total results to begin to return records.
+    """
+    page: Int
+
+    """Return all children of this parent asset"""
+    parent_asset_uuid: GUID
+
+    """Return all children of these parent asset"""
+    parent_asset_uuids: [GUID]
+
+    """Provider UUID"""
+    provider: GUID
+
+    """
+    URL-encoded search query.
+    This allows us to execute a string search against multiple fields eg. "Trap Snare"
+    """
+    query: String
+
+    """
+    Enforce a stable random sort across page refreshes & pagination.
+    Send a new random_seed to refresh search results.
+    """
+    random_seed: String
+
+    """popularity, random, recency, relevance"""
+    sort: AssetSortType
+
+    """
+    Allow legacy clients to query tags in a backward-compatible way.
+    This input relaxes the `GUID` input type so that we can pass string
+    identifiers into queries.
+    """
+    tag_ids: [ID]
+    tag_uuids_exclude: [GUID]
+
+    """Return only content matching the tag uuids in the comma-delimited"""
+    tags: [GUID]
+  ): AssetPage @deprecated(reason: "Use assetsSearch instead")
+  assetsSearch(admin: Boolean, children: AssetChildrenInput, filter: AssetFiltersInput!, legacy: AssetSearchLegacyInput, pagination: CursorPaginationInput, parents: AssetParentsInput, sort: AssetSortInput): AssetPage
+
+  """Collection of all available credit packs for the user"""
+  availableCreditPacks(creditsNeeded: Int): AvailableCreditPacks
+
+  """Get current status and error for a async job"""
+  catalogJob(jobUuid: GUID!): CatalogJobResponse
+
+  """A page of Assets that are completed"""
+  completedAssets(asset_type_slug: AssetTypeSlug!): AssetPage
+
+  """
+  The list of content groups for the browse section, with entries transformed
+  into canonical PackAsset and CollectionAsset
+  """
+  contentGroupsTransformed: [TransformedContentGroup]
+
+  """
+  The list of content groups for the browse section, with entries transformed
+  into canonical PackAsset and CollectionAsset, and with associated metadata.
+  """
+  contentGroupsTransformedWithMetadata: TransformedContentGroupsWithMetadata
+  conversionInfo: ConversionInfo
+  cosoTypeMetadata(withImages: Boolean): CosoTypeMetadata
+
+  """Get a cost estimate to purchase the given assets"""
+  costEstimate(assetUuids: [GUID!]!): CostEstimate
+  createProofOfLicense(artistName: String!, assetUuids: [String!]!, fullLegalName: String!): CreateProofOfLicense
+  creditBalance: Int
+  customStackTemplateFromPrompt(prompt: String!): CustomStackTemplateFromPromptResult
+
+  """A single Device by ID"""
+  device(uuid: GUID!): IDevice
+
+  """All Devices in the Splice catalog"""
+  devices(allow_preset: Boolean, name: String, parent_asset_uuid: GUID, type: String, uuids: [GUID!]): DevicePage
+
+  """Disclaimer text associated with all plans"""
+  disclaimerForPlans: String
+
+  """Gets the Discord username for a user with a connected Discord account"""
+  discordUsername: String
+  estimateStackKey(stack: StackInput!): EstimateStackKeyResult
+
+  """Returns an array of all featured plan content rows for a plan group."""
+  featuredPlanContent(flag_evaluations: [PricingFlagEvaluation], group: PlanGroupSlug): [FeaturedPlanContentItem]
+
+  """Returns an array of all featured plan terms items for a plan group."""
+  featuredPlanTerms(flag_evaluations: [PricingFlagEvaluation], group: PlanGroupSlug): [FeaturedPlanTermsItem]
+
+  """Returns an array of all frequently asked questions for a plan group."""
+  frequentlyAskedQuestions(flag_evaluations: [PricingFlagEvaluation], group: PlanGroupSlug): [FrequentlyAskedQuestion]
+  gear(id: String!): Gear
+  getProofOfLicense(includeDownloadUrl: Boolean!, uuid: String!): GetProofOfLicense
+  helloWorld: String
+
+  """
+  Creates a new Stack layer from the provided 36-character asset (catalog) UUID.
+  
+  Use this query when you need to initialize a Stack layer based on an asset
+  but lack sufficient data to fully define the layer.
+  
+  The resulting Stack layer will include the complete structure needed for
+  rendering, saving, and playback.
+  """
+  initializeStackLayer(assetUuid: GUID!): StackLayer
+
+  """A single Instructor by ID"""
+  instructor(uuid: GUID!): Instructor
+
+  """All Instructors in the Splice catalog"""
+  instructors(name: String, uuids: [GUID!]): InstructorPage
+
+  """Returns the Intercom user_hash for the current user."""
+  intercomUser: IntercomUser
+  leasableGear(filter: String!): [Gear] @deprecated(reason: "Replaced with leasableGearByCategory")
+  leasableGearByCategory(category: LeasableGearCategoryInput!): [Gear]
+  legacyAdmin: LegacyAdminQuery
+  legacyCollectionByPermalink(permalink: String!): CollectionAsset
+  legacyPacksChart(searchParams: PackSearchParams): [PackAsset!]!
+
+  """
+  Queries legacy releases by username, buy plugin ID, or by generalized search.
+  This is currently backed by multiple purpose-built endpoints, which makes
+  inputs to this field mutually exclusive in some cases.
+  """
+  legacyReleases(
+    daw: String
+    derivatives_of: String
+    following: Boolean
+    genre: String
+    is_remix: Boolean
+    page: Int = 1
+    per_page: Int = 20
+
+    """
+    When present all other inputs aside from paging inputs are ignored.
+    The username and plugin inputs are mutually exclusive.
+    """
+    plugin: Int
+    q: String
+    sort: String
+    tag: String
+    user: String
+
+    """
+    When present all other inputs aside from paging inputs are ignored.
+    The username and plugin inputs are mutually exclusive.
+    """
+    username: String
+  ): [LegacyRelease!]!
+
+  """
+  Gets the email and account_id if a user has an associated account with a manufacturer
+  """
+  manufacturerUserAccount(manufacturerName: String!): ManufacturerUserAccount
+  merchContentBlock(uuid: GUID!): MerchContentBlock
+  merchContentBlockStatuses: [MerchContentBlockStatus]
+  merchContentBlocks(
+    """slug of page associated with content block"""
+    page_slug: String
+
+    """title of content block"""
+    title: String
+  ): [MerchContentBlock]
+  merchContentItemContentTypes: [MerchContentItemContentType]
+  merchContentTypes: [MerchContentType]
+  merchPage(slug: String!): MerchPage
+  merchPages(input: MerchGetPagesInput): MerchPagePage
+  myStackSnapshots(cursorToken: String, limit: Int, sort: StackSort): StackSnapshotsPayload
+  myStacks(limit: Int, sort: StackSort): [DBStack!] @deprecated(reason: "use myStacksPaged")
+  myStacksClips(cursorToken: String, filter: StacksClipsFilterInput, limit: Int, sort: StackSort): StacksClipsPayload
+  myStacksPaged(cursorToken: String, filter: StacksFilterInput, limit: Int, sort: StackSort): StacksPayload
+  myStacksSessions(cursorToken: String, limit: Int): StacksSessionsPayload
+  newStack(
+    customStackTemplate: CosoCustomStackTemplateInput
+    estimateKey: Boolean
+    harmonicMode: Boolean
+    harmonicModeAudioKey: String
+    harmonicModeChordType: String
+    harmonicModeFirstLayerWeight: Float
+    harmonicModeOffset: Int
+    harmonicModePersistWeight: Float
+    harmonicModeVersion: String
+    numLayers: Int
+    randomize: Boolean
+    randomizeDefaultLayerOrder: Boolean
+
+    """below are experimental parameters"""
+    randomizeTopHitOffsetMax: Int
+    seed: CosoSeedInput
+    stackBpm: Int
+    stackTemplate: String!
+  ): Stack
+  newStackLayer(estimateKey: Boolean, harmonicMode: Boolean, harmonicModeWeight: Float, newLayerType: String, numResults: Int, stack: StackInput!): [StackLayer]
+
+  """
+  V2 endpoints, since V1 returns only [StackLayer] and we want to return additional data
+  such as stackKey
+  """
+  newStackLayerV2(estimateKey: Boolean, harmonicMode: Boolean, harmonicModeWeight: Float, newLayerType: String, numResults: Int, stack: StackInput!): NewStackLayerV2Result
+
+  """Generate a new stack from a text prompt"""
+  newStackWithPrompt(newStack: NewStackInput, prompt: String!): NewStackWithPromptResult
+
+  """A pack by permalink"""
+  packAsset(permalink: String!): PackAsset
+  paymentMethod: PaymentMethod
+
+  """Return all permissions for the client"""
+  permissions: PermissionsResponse!
+
+  """A single subscription Plan by ID"""
+  plan(uuid: ID!): Plan
+
+  """Marketing material for plan select."""
+  planSelectTableHeaders(billing_frequency: [BillingFrequencySlug], flag_evaluations: [PricingFlagEvaluation], group: [PlanGroupSlug]): [PlanSelectTableHeader]
+
+  """Collection of all subscription Plan objects in the system"""
+  plans(billing_frequency: [BillingFrequencySlug], flag_evaluations: [PricingFlagEvaluation], group: [PlanGroupSlug]): [Plan!]
+
+  """
+  Returns a object with copy for a plan group and a user's current subscription state.
+  """
+  plansPageCopy(flag_evaluations: [PricingFlagEvaluation], group: PlanGroupSlug): PlansPageCopy
+
+  """
+  Returns an array of all promo codes in our system.
+  In the future, these will return from an API but they are currently hard-coded.
+  """
+  promoCodes(campaign: String, plan_code: String): [PromoCode]
+
+  """A single Provider"""
+  provider(uuid: GUID!): Provider
+
+  """A single Provider retrieved via legacy uuid."""
+  providerByLegacyUUID(legacyUuid: GUID!): Provider
+
+  """A page of Providers matching the given inputs."""
+  providers(admin: Boolean, name: String, uuids: [GUID!]): ProviderPage
+
+  """
+  recommendedPacks is a list of packs returned by the Recommendations Service based on the user's purchase history
+  """
+  recommendedPacks: [PackAsset]
+
+  """Gets signed url to upload to S3"""
+  signedUrl(assetType: AssetTypeSlug, name: String!, uuid: GUID!): SignedUrl
+
+  """An array of similar sounds samples from the legacy API or Catalog."""
+  similarSounds(isLegacy: Boolean, uuid: GUID!): [SampleAsset]
+
+  """Gets autocomplete suggestions from the search service"""
+  soundsSearchSuggestions(context: String!, limit: Int!, searchTerm: String!): SoundsSearchSuggestionsResponse!
+  stack(uuid: GUID!): DBStack
+  stackSnapshot(uuid: GUID!): StackSnapshot
+  stacksClip(uuid: GUID!): StacksClip
+  stacksSession(uuid: GUID!): StacksSession
+  stacksTypeMetadata: StacksTypeMetadata
+  subscription(group: PlanGroupSlug): PlanSubscription
+  swapStackLayer(estimateKey: Boolean, numResults: Int, stack: StackInput!, swapLayerIndex: Int, topHitOffset: Int): [StackLayer]
+  swapStackLayerV2(estimateKey: Boolean, numResults: Int, stack: StackInput!, swapLayerIndex: Int, topHitOffset: Int): SwapStackLayerV2Result
+  syncDiff: TaxonomySyncDiff
+
+  """Gets a Tag by ID."""
+  tag(uuid: GUID!): Tag
+
+  """Look up a `TagCategoryList` by `permalink_string` or `uuid`"""
+  tagCategoryList(permalink_slug: String, uuid: String, v2Enabled: Boolean): TagCategoryList
+
+  """Get all available `TagCategoryList`s"""
+  tagCategoryLists: [TagCategoryList!]!
+
+  """
+  Pass a `tagId` (tag slug) to retrieve information about which Product Category it belongs to and it's permalink url.
+  Product Categories are hardcoded in the category-route-list mock for Genres, Instruments, Cinematic FX, and Presets.
+  The default category if not listed there is `Tags`.
+  """
+  tagPageMetadata(tagId: ID!): TagPageMetadata
+
+  """Search for a Tag regardless of Taxonomy"""
+  tags(
+    """Return the page after this cursor value."""
+    cursor: String
+
+    """Maximum number of records returned."""
+    limit: Int
+
+    """Sort order of the records."""
+    order: SortOrder
+
+    """Whether or not to include unsynced tags"""
+    pending: Boolean
+
+    """URL-encoded search query"""
+    query: String
+
+    """Sort on this key."""
+    sort: String
+  ): TagPage
+  taxPreview(paymentMethodAddress: PaymentMethodAddressInput!, planUUID: ID!): TaxPreview
+
+  """Paged collection of all Taxonomy objects in the system."""
+  taxonomies(
+    """Return the page after this cursor value."""
+    cursor: String
+
+    """Maximum number of records returned."""
+    limit: Int
+
+    """Sort order of the records."""
+    order: SortOrder
+
+    """Whether or not to include unsynced tags"""
+    pending: Boolean
+
+    """Sort on this key."""
+    sort: String
+  ): TaxonomyPage
+
+  """A single Taxonomy by ID."""
+  taxonomy(uuid: GUID!): Taxonomy
+
+  """The currently logged-in User"""
+  user: User
+  userAudioFile(searchBy: UserAudioFileInput!): UserAudioFile
+  userAudioFiles(page: Int, perPage: Int): UserAudioFilesPayload
+  userAudioStorageData: UserAudioStorageData
+  userAudioUploadJob(jobUuid: String!): UserAudioUploadJob!
+
+  """The list of collaborators on a project."""
+  v2ProjectCollaborators(uuid: GUID!): [LegacyStudioUser]
+
+  """Full details of a project."""
+  v2ProjectManifest(revId: GUID, uuid: GUID!): V2ProjectManifest
+
+  """Paginated list of projects for the logged in user."""
+  v2Projects(page: Int): [V2Project]
+
+  """Look up a user by uuid or email."""
+  v2UserLookup(email: String, uuid: GUID): V2User
+
+  """User search by username."""
+  v2UserSearch(query: String!): [LegacyStudioUser]
+
+  """The list of content groups for the browse section."""
+  wwwContentGroups: [ContentGroup]
+  wwwGenre(permalink: String!): WwwGenre
+  wwwMeReleasesLiked(uuids: [String]): WwwMeReleasesLiked
+
+  """Returns a plugin with or without a gearPlan"""
+  wwwPlugin(id: String!): WwwPlugin
+
+  """Returns a Plugin that is used for displaying a user's current leases"""
+  wwwPluginLeases: [WwwPluginLease]
+
+  """Returns a Plugin that is used for advertising"""
+  wwwPluginsShow: WwwPluginAdvertisement
+
+  """
+  A list of providers (labels) in legacy format, optionally filtered by sort types and per-page limits.
+  """
+  wwwPremiumProviders(per_page: Int, sort: String, variant: String): [Provider!]!
+
+  """A Collection (Repack (Set)) as provided by the public legacy API."""
+  wwwSoundsCustomPack(permalink: String, username: String): WwwSoundsCustomPack
+
+  """A pack as provided by the public packs legacy API."""
+  wwwSoundsPack(permalink: String!): WwwSoundsPack
+
+  """Packs matching the given input parameter filters"""
+  wwwSoundsPacks(main_genre: String, per_page: Int): WwwSoundsPacks
+
+  """A list of recently released packs, optionally filtered by provider."""
+  wwwSoundsRecentPacks(per_page: Int, provider_permalink: String): [PackAsset!]!
+  wwwUser(username: String!): WwwUser
+  wwwUsersFollowers(count: Int = 100, start: Int = 0, username: String!): WwwUsersFollowers
+  wwwUsersFollowing(count: Int = 100, start: Int = 0, username: String): WwwUsersFollowing
+}
+
+type RelatedAssets {
+  tag_summary: [TagSummary] @deprecated(reason: "Not Implemented")
+}
+
+type RelatedAssetsCounts {
+  count: Int
+  type: AssetTypeSlug
+}
+
+type RemoveAssetFromCollection {
+  asset: ChildAsset
+  collection: CollectionAsset
+}
+
+"""Generic metadata response."""
+type ResponseMetadata {
+  """Next cursor"""
+  next: String
+
+  """Previous cursor"""
+  previous: String
+
+  """Total Records"""
+  records: Int
+}
+
+type Sample {
+  audio_key: String
+  bpm: Int
+  chord_type: String
+  dir: String
+  duration: Int
+  file_hash: String
+  filename: String
+  genre: String
+  pack: LegacyPack2
+  popularity: Int
+  preview_url: String
+  price: Int
+  provider_name: String
+  provider_permalink: String
+  provider_uuid: ID
+  published: Boolean
+  published_at: String
+  sample_type: String
+  sas_id: String
+  tags: [String]
+  trending: Int
+  waveform_url: String
+}
+
+type SampleAsset implements IAsset & IAssetChild & ILegacyAsset & ISample {
+  activities: [AssetActivity]
+  allowed_asset_type_child: [AssetType]
+  asset_category_slug: AssetCategorySlug
+  asset_prices: [Price]
+  asset_status_slug: AssetStatusSlug
+  asset_type: AssetType
+  asset_type_slug: AssetTypeSlug
+
+  """Eg. if an asset is rare"""
+  attributes: [AssetAttributeSlug!]
+  bpm: Int
+
+  """Eg, if asset is eligible for Presonus free bundled content"""
+  bundled_content_daws: [AssetBundledContentDawSlug!]
+  catalog_uuid: GUID
+  chord_type: String
+
+  """
+  Playback information for a sample when queried with a coso seed (pitch shift, playback bpm, number of bars)
+  """
+  coso_playback_metadata(seed: CosoSeedInput): CosoPlaybackMetadata
+  created_at: DateTime
+  description: String
+
+  """
+  by default the name for a sample is the full filepath
+  This will just be the path to the file.
+  example: /drums/snares/128/
+  """
+  display_file_path: String
+
+  """
+  by default the name for a sample is the full filepath
+  This will just be the file name.
+  example: snare_128.wav
+  """
+  display_name: String
+  duration: Int
+  files(includeSource: Boolean): [AssetFile!]
+
+  """a flag indicating that a sample is eligible for inclusion coso"""
+  has_coso: Boolean
+
+  """a flag indicating that a sample has similar sounds"""
+  has_similar_sounds: Boolean
+
+  """Ingestion issues associated with the asset."""
+  ingestion_issues: AssetIngestionIssues
+  instrument: String
+  key: String
+  legacy_permalink: String
+  legacy_uuid: GUID
+  licensed: Boolean
+  liked: Boolean
+  marketplace_status_slug: MarketplaceStatusSlug
+  name: String
+
+  """
+  A summary count of all parent assets of this asset, grouped by asset type.
+  """
+  parent_asset_counts: [RelatedAssetsCounts]
+  parent_asset_uuids: [GUID]
+  parents(filter: AssetFiltersInput!, pagination: CursorPaginationInput, sort: AssetSortInput): AssetPage
+  permalink_base_url: String
+  permalink_slug: String
+  provider: Provider
+  provider_sku: String
+  provider_uuid: GUID
+  tags: [Tag]
+  updated_at: DateTime
+  uuid: GUID!
+}
+
+input SampleInput {
+  audio_key: String
+  bpm: Int
+  chord_type: String
+  dir: String
+  file_hash: String
+  filename: String
+  price: Int
+  sample_type: String
+  tags: [String]
+}
+
+type SegmentPayloadData {
+  unit_name: String!
+  unit_type: String!
+}
+
+input ShareStackInput {
+  """The type of License Use for this share"""
+  licenseUseType: StackLicenseUseType
+
+  """
+  A uuid of the DBStack being referenced. If not present, a complete snapshot is
+  required.
+  """
+  stackUuid: GUID
+}
+
+type ShareStackResult {
+  """
+  A signed url for uploading a file to storage, if required.
+  This is no longer used, an uploaded render file for sharing is no longer required.
+  """
+  fileUploadUrl: SignedUrlInfo @deprecated(reason: "Obsolete")
+
+  """Share URL to open Stack in Create."""
+  shareUrl: URL
+
+  """UUID of the saved Snapshot"""
+  snapshotUuid: GUID
+}
+
+"""Url to upload to S3"""
+type SignedUrl {
+  url: String
+
+  """uuid for the requested asset"""
+  uuid: GUID!
+}
+
+"""Signed URL with method and headers"""
+type SignedUrlInfo {
+  """Required HTTP headers/values, if any"""
+  headers: [HttpHeader!]
+
+  """Required HTTP method, typically "PUT" for uploads or "GET" otherwise"""
+  method: HttpMethod!
+
+  """The signed URL"""
+  url: URL!
+}
+
+enum SimilarAssetTypeSlug {
+  lesson
+  video
+}
+
+enum SortOrder {
+  ASC
+  DESC
+}
+
+"""
+Response from the search service containing autocomplete suggestions for a given sounds search query
+"""
+type SoundsSearchSuggestionsResponse {
+  """
+  ID used to link a search "session" with a specific set of results returned from the sounds search suggestions API
+  """
+  autocompleteUuid: GUID!
+  id: GUID
+  results: [SoundsSearchSuggestionsResult!]!
+}
+
+"""Individual sounds search autocomplete suggestion"""
+type SoundsSearchSuggestionsResult {
+  autocompleteTerm: String!
+  length: Int!
+  offset: Int!
+  termType: String!
+}
+
+type Stack {
+  createMode: String
+  customStackTemplate: CosoCustomStackTemplate
+  layers: [StackLayer!]
+  name: String
+  originalBpm: Int
+  stackBpm: Int
+  stackKey: StackKey
+  stackPsOffset: Int
+  stackTemplate: String
+  stackTemplateLabel: String @deprecated(reason: "Static, use cosoTypeMetadata")
+  uuid: GUID!
+}
+
+type StackExportType {
+  label: String!
+  slug: String!
+  status: StackExportTypeStatus!
+}
+
+enum StackExportTypeStatus {
+  ACTIVE
+  COMINGSOON
+  DISABLED
+  UNSPECIFIED
+}
+
+input StackInput {
+  createMode: String
+  customStackTemplate: CosoCustomStackTemplateInput
+  layers: [StackLayerInput!]!
+  name: String
+  originalBpm: Int
+  stackBpm: Int
+  stackKey: StackKeyInput
+  stackPsOffset: Int
+  stackTemplate: String
+  uuid: GUID
+}
+
+type StackKey {
+  audioKey: String
+  chordType: String
+}
+
+input StackKeyInput {
+  audioKey: String
+  chordType: String
+}
+
+type StackLayer {
+  asset: SampleAsset
+  assetSource: String @deprecated(reason: "Obsolete")
+  assetUuid: String
+  bpm: Int
+  clip: StacksClip
+  clipUuid: String
+  color: String
+  label: String
+  layerType: String
+  layerTypeLabel: String @deprecated(reason: "Static, use cosoTypeMetadata")
+  locked: Boolean
+  mute: Boolean @deprecated(reason: "Use properties.mute")
+  nonPitched: Boolean
+  numBars: Int
+  origin: String
+  playbackBpm: Float
+  properties: StackLayerProperties
+  psOffset: Int
+  userAudioFile: UserAudioFile
+  userAudioFileHash: String
+  uuid: GUID!
+  vectors: [FloatVector!]
+  volume: Float @deprecated(reason: "Use properties.volume")
+}
+
+input StackLayerInput {
+  assetSource: String
+  assetUuid: String
+  bpm: Int
+  clipUuid: String
+  color: String
+  label: String
+  layerType: String
+  locked: Boolean
+  nonPitched: Boolean
+  numBars: Int
+  origin: String
+  playbackBpm: Float
+  properties: StackLayerPropertiesInput
+  psOffset: Int
+  userAudioFileHash: String
+  uuid: GUID
+  vectors: [FloatVectorInput!]
+}
+
+type StackLayerProperties {
+  mute: StacksBoolProperty
+  volume: StacksFloatProperty
+}
+
+input StackLayerPropertiesInput {
+  mute: StacksBoolPropertyInput
+  volume: StacksFloatPropertyInput
+}
+
+enum StackLicenseStatus {
+  LICENSE_STATUS_PENDING
+  LICENSE_STATUS_UNSPECIFIED
+  LICENSE_STATUS_USED
+}
+
+"""Info about the share license used by a Stack"""
+type StackLicenseUse {
+  """
+  Status of the share license. Must be LICENSE_STATUS_USED for a Stack to be shareable.
+  """
+  licenseStatus: StackLicenseStatus
+
+  """
+  Type of share license use, e.g. web share, user download, 3rd party, etc.
+  Stacks should be shared only in contexts for which the given license use type applies.
+  """
+  licenseUseType: StackLicenseUseType
+}
+
+enum StackLicenseUseType {
+  LICENSE_USE_TYPE_3RD_PARTY_SHARE
+  LICENSE_USE_TYPE_DAW_EXPORT
+  LICENSE_USE_TYPE_SPLICE_WEB_SHARE
+  LICENSE_USE_TYPE_UNSPECIFIED
+  LICENSE_USE_TYPE_USER_DOWNLOAD
+}
+
+"""An immutable snapshot of a Stack"""
+type StackSnapshot {
+  createdAt: DateTime
+  deletedAt: DateTime
+  isPublic: Boolean
+
+  """Hydrated User referenced in ownerUuid resolved via Legacy API"""
+  legacyV2User: V2User
+  licenseUse: StackLicenseUse
+  ownerUuid: GUID
+  stack: Stack
+  uuid: GUID!
+}
+
+type StackSnapshotsPayload {
+  cursor: StacksCursor
+  snapshots: [StackSnapshot!]
+}
+
+enum StackSort {
+  STACK_SORT_CREATED_AT_ASC
+  STACK_SORT_CREATED_AT_DESC
+  STACK_SORT_NAME_ASC
+  STACK_SORT_NAME_DESC
+  STACK_SORT_UNSPECIFIED
+  STACK_SORT_UPDATED_AT_ASC
+  STACK_SORT_UPDATED_AT_DESC
+}
+
+type StacksBoolEvent {
+  beat: Float!
+  value: Boolean!
+}
+
+input StacksBoolEventInput {
+  beat: Float!
+  value: Boolean!
+}
+
+type StacksBoolEventList {
+  events: [StacksBoolEvent!]
+}
+
+input StacksBoolEventListInput {
+  events: [StacksBoolEventInput!]
+}
+
+type StacksBoolProperty {
+  eventList: StacksBoolEventList
+  value: Boolean
+}
+
+input StacksBoolPropertyInput {
+  eventList: StacksBoolEventListInput
+  value: Boolean
+}
+
+type StacksClip {
+  asset: SampleAsset
+  assetUuid: GUID
+  loopStartBeat: Float
+  loopStopBeat: Float
+  name: String
+  sourceStartMs: Float
+  sourceStopMs: Float
+  userAudioFile: UserAudioFile
+  userAudioFileHash: String
+  uuid: GUID!
+  version: Int
+}
+
+input StacksClipInput {
+  assetUuid: GUID
+  loopStartBeat: Float
+  loopStopBeat: Float
+  name: String
+  sourceStartMs: Float
+  sourceStopMs: Float
+  userAudioFileHash: String
+  uuid: GUID!
+}
+
+input StacksClipUpdateInput {
+  latestVersion: Int!
+  loopStartBeat: Float
+  loopStopBeat: Float
+  name: String
+  sourceStartMs: Float
+  sourceStopMs: Float
+  uuid: GUID!
+}
+
+input StacksClipsFilterInput {
+  hasUserAudio: Boolean
+  userAudioFileHash: String
+}
+
+type StacksClipsPayload {
+  clips: [StacksClip!]
+  cursor: StacksCursor
+}
+
+type StacksCursor {
+  nextToken: String
+  prevToken: String
+}
+
+type StacksDoubleEvent {
+  beat: Float!
+  value: Float!
+}
+
+input StacksDoubleEventInput {
+  beat: Float!
+  value: Float!
+}
+
+type StacksDoubleEventList {
+  events: [StacksDoubleEvent!]
+}
+
+input StacksDoubleEventListInput {
+  events: [StacksDoubleEventInput!]
+}
+
+type StacksDoubleProperty {
+  eventList: StacksDoubleEventList
+  value: Float
+}
+
+input StacksDoublePropertyInput {
+  eventList: StacksDoubleEventListInput
+  value: Float
+}
+
+input StacksFilterInput {
+  bpmMax: Int
+  bpmMin: Int
+  clipUuid: String
+  hasUserAudio: Boolean
+  nameContains: String
+  styles: [String!]
+  userAudioFileHash: String
+}
+
+type StacksFloatEvent {
+  beat: Float!
+  value: Float!
+}
+
+input StacksFloatEventInput {
+  beat: Float!
+  value: Float!
+}
+
+type StacksFloatEventList {
+  events: [StacksFloatEvent!]
+}
+
+input StacksFloatEventListInput {
+  events: [StacksFloatEventInput!]
+}
+
+type StacksFloatProperty {
+  eventList: StacksFloatEventList
+  value: Float
+}
+
+input StacksFloatPropertyInput {
+  eventList: StacksFloatEventListInput
+  value: Float
+}
+
+type StacksIntEvent {
+  beat: Float!
+  value: Int!
+}
+
+input StacksIntEventInput {
+  beat: Float!
+  value: Int!
+}
+
+type StacksIntEventList {
+  events: [StacksIntEvent!]
+}
+
+input StacksIntEventListInput {
+  events: [StacksIntEventInput!]
+}
+
+type StacksIntProperty {
+  eventList: StacksIntEventList
+  value: Int
+}
+
+input StacksIntPropertyInput {
+  eventList: StacksIntEventListInput
+  value: Int
+}
+
+type StacksPayload {
+  cursor: StacksCursor
+  stacks: [DBStack!]
+  totalCount: Int
+}
+
+type StacksSection {
+  name: String
+  numBars: Int
+  sectionStacks: [StacksSectionStack!]!
+  sections: [StacksSection!] @deprecated(reason: "Use 'section_stacks' instead")
+  stackUuid: GUID @deprecated(reason: "Use 'section_stacks' instead")
+  uuid: GUID!
+}
+
+input StacksSectionInput {
+  name: String
+  numBars: Int
+  sectionStacks: [StacksSectionStackInput!]
+  uuid: GUID!
+}
+
+type StacksSectionStack {
+  name: String
+  numBars: Int
+  stack: Stack
+  stackUuid: GUID!
+  uuid: GUID!
+}
+
+input StacksSectionStackInput {
+  name: String
+  numBars: Int
+  stackUuid: GUID!
+  uuid: GUID!
+}
+
+type StacksSession {
+  bpm: Float
+  clipUuids: [GUID!]
+  clips: [StacksClip!]
+  createdAt: DateTime
+  name: String
+  ownerUuid: GUID
+  sections: [StacksSection!]
+  stackUuids: [GUID!]
+  stacks: [Stack!]
+  updatedAt: DateTime
+  uuid: GUID!
+  version: Int
+}
+
+input StacksSessionInput {
+  bpm: Float
+  clipUuids: [GUID!]
+  createdAt: DateTime
+  name: String
+  ownerUuid: GUID
+  sections: [StacksSectionInput!]
+  stackUuids: [GUID!]
+  updatedAt: DateTime
+  uuid: GUID!
+  version: Int
+}
+
+type StacksSessionsPayload {
+  cursor: StacksCursor
+  sessions: [StacksSession!]
+}
+
+type StacksTypeMetadata {
+  exportTypes: [StackExportType!]
+}
+
+type SubscriptionResponse {
+  items: [PlanSubscription]
+}
+
+enum SubscriptionState {
+  active
+  cancellation_scheduled
+  cancelled
+  new
+  past_due
+  pause_scheduled
+  paused
+  processing
+  trial
+  trial_cancellation_scheduled
+  trial_cancelled
+}
+
+type SwapStackLayerV2Result {
+  layers: [StackLayer]
+  stackKey: StackKey
+}
+
+type SyncDiscordRoleWithSubscriptionResult {
+  discordUsername: String
+  roleName: String
+}
+
+type Tag {
+  """If this Tag has child Tags"""
+  has_children: Boolean
+  label: String
+  parent_label: String
+  parent_uuid: String
+  parents: [Tag]
+  status: PublishState
+
+  """The paginated child Tags of this Tag"""
+  tags(
+    """Return the page after this cursor value."""
+    cursor: String
+
+    """Maximum number of records returned."""
+    limit: Int
+
+    """Sort order of the records."""
+    order: SortOrder
+
+    """URL-encoded search query"""
+    query: String
+
+    """Sort on this key."""
+    sort: String
+  ): TagPage
+
+  """The Taxonomy this tag is a part of."""
+  taxonomy: Taxonomy
+  updated_at: DateTime
+  uuid: ID
+}
+
+"""
+Object used to define the tags in a taxonomy associated
+with a foreign object defined in the taxonomy api
+"""
+type TagBranch {
+  items: [Tag]
+  taxonomy: Taxonomy
+}
+
+"""
+A `TagCategory` is a grouping of tags that have something in common.
+They are usually displayed together in a list, and have a descriptive name,
+an optional parent tag, and a list of tags.
+
+Examples:
+{
+  name: 'Cinematic / FX',
+  tags: [
+    { label: 'whoosh' },
+    { label: 'riser' }
+  ]
+}
+
+{
+  name: 'Drums',
+  parent: { label: 'drums' },
+  tags: [
+    { label: 'snare' },
+    { label: 'kick' }
+  ]
+}
+"""
+type TagCategory {
+  altDescription: String
+  altName: String
+  description: String
+  name: String!
+  parent: Tag
+  permalink: String!
+  subcategories: [TagCategory!]
+  tags: [Tag!]!
+  uuid: String!
+}
+
+"""
+A `TagCategoryList` is a list of `TagCategory` items, usually
+grouped around a theme e.g "Instrument" or "Genre".
+
+The list can optionally include a `Taxonomy`.
+"""
+type TagCategoryList {
+  categories: [TagCategory!]!
+  name: String!
+  permalink_slug: String!
+  taxonomy: Taxonomy
+  uuid: String!
+}
+
+input TagInput {
+  label: String
+  parent_uuid: GUID
+  status: PublishState
+  taxonomy_uuid: GUID
+  uuid: GUID
+}
+
+type TagPage {
+  items: [Tag]
+  response_metadata: ResponseMetadata
+}
+
+"""
+TagPageMetadata is pulling data from the hardcoded category route list mock if the 'tagId' passed
+has already been attributed to a Tag Category as defined in Tag-category-list-v2.
+
+This is used on the /tag landing page to reroute if a tag already belongs to another Tag Category, such as 'Genre' or 'Instruments'
+"""
+type TagPageMetadata {
+  label: String!
+  productLandingPagePermalink: String
+}
+
+"""Information about how a tag is applied through the system"""
+type TagSummary {
+  """The number of entities in the system with the associated tag applied"""
+  count: Int
+
+  """The tag"""
+  tag: Tag
+  tagUuid: GUID
+
+  """The UUID of the tag"""
+  tag_uuid: GUID @deprecated(reason: "use tagUuid")
+}
+
+"""
+Input required to bulk edit tags in the taxonomy api on foreign objects based on UUID
+"""
+input TaggedEntitiesInput {
+  entity_type: String
+  entity_uuids: [GUID]
+  operation_name: TaggedEntityOperation
+  tag_uuids: [GUID]
+}
+
+"""
+Represents a foreign object in the taxonomy api that has has tags associated with it
+"""
+type TaggedEntity {
+  entity_type: String
+  entity_uuid: GUID
+  tag_branches: [TagBranch]
+}
+
+"""
+These are enums used to bulk edit tags
+- add: add provided tag UUIDs to provided asset UUIDs
+- remove: remove provided tag UUIDs from provided asset UUIDs
+- remove_all: remove all from provided asset UUIDs
+"""
+enum TaggedEntityOperation {
+  add
+  remove
+  remove_all
+}
+
+type TaxPreview {
+  currency: String
+  pricing_model: String
+  recurly_account_code: String
+  subtotal_in_cents: Int
+  tax_in_cents: Int
+  tax_rate: Int
+  tax_region: String
+  tax_type: String
+  total_amount_in_cents: Int
+  unit_amount_in_cents: Int
+}
+
+type Taxonomy {
+  count: Int
+  description: String
+  name: String
+
+  """Paged tags within a taxonomy"""
+  tags(
+    """Return the page after this cursor value."""
+    cursor: String
+
+    """Maximum number of records returned."""
+    limit: Int
+
+    """Sort order of the records."""
+    order: SortOrder
+
+    """Whether or not to include unsynced tags"""
+    pending: Boolean
+
+    """URL-encoded search query"""
+    query: String
+
+    """Sort on this key."""
+    sort: String
+  ): TagPage
+  type: TaxonomyType
+
+  """Formatted as `2020-04-24T12:06:01.753Z`"""
+  updated_at: DateTime
+  uuid: GUID
+}
+
+"""Input values used when creating a brand new Taxonomy."""
+input TaxonomyCreateInput {
+  description: String
+  name: String
+  taxonomy_type_id: Int
+}
+
+"""Paged subset of Taxonomy objects"""
+type TaxonomyPage {
+  items: [Taxonomy]
+  response_metadata: ResponseMetadata
+}
+
+"""Paged subset of Taxonomy objects"""
+type TaxonomySync {
+  version: Int
+}
+
+"""Paged subset of Taxonomy objects"""
+type TaxonomySyncDiff {
+  tags: [Tag]
+  version: Int
+}
+
+type TaxonomyType {
+  display_name: String
+  id: Int
+  name: String
+  updated_at: DateTime
+  uuid: GUID
+}
+
+type TransformedContentGroup {
+  description: String
+  entries: [TransformedContentGroupEntry]
+  title: String
+  type: String
+}
+
+type TransformedContentGroupEntry {
+  caption: String
+  collection: CollectionAsset
+  collection_uuid: String
+  main_image_url: String
+  mobile_image_url: String
+  pack: PackAsset
+  pack_uuid: String
+  type: String
+  url: String
+}
+
+type TransformedContentGroupsMetadata {
+  page_slug: String
+}
+
+type TransformedContentGroupsWithMetadata {
+  groups: [TransformedContentGroup!]
+  metadata: TransformedContentGroupsMetadata!
+}
+
+"""
+A field whose value conforms to the standard URL format as specified in RFC3986: https://www.ietf.org/rfc/rfc3986.txt.
+"""
+scalar URL
+
+enum UgcFileType {
+  MP3
+  WAV
+}
+
+type UpdateAssetResponse {
+  asset: AnyAsset!
+  publishResult: PublishResponse
+}
+
+enum UpdateMode {
+  add
+  remove
+  replace
+}
+
+"""The `Upload` scalar type represents a file upload."""
+scalar Upload
+
+type User {
+  avatar_url: String
+  bio: String
+  email: String
+  extendedAttributes: UserExtendedAttributes
+  id: Int
+  name: String
+  status: UserStatus
+  username: String
+  uuid: GUID
+}
+
+type UserAudioFile {
+  bpm: Int
+  downloadUrl: String
+  durationMs: Int
+  fileHash: String!
+  numBars: Int
+  originalFilename: String!
+  sampleFamilySlug: String
+  size: Int!
+  userUuid: GUID!
+  uuid: GUID!
+  waveformUrl: String
+}
+
+input UserAudioFileInput {
+  fileHash: String
+  uuid: GUID
+}
+
+enum UserAudioFileSource {
+  daw_plugin
+  desktop_create
+  mobile_mic_capture
+  web_create
+}
+
+type UserAudioFilesPayload {
+  totalCount: Int
+  userAudioFiles: [UserAudioFile!]
+}
+
+type UserAudioStorageData {
+  numFilesStored: Int!
+  totalStorage: Float!
+  usedStorage: Float!
+}
+
+type UserAudioUploadJob {
+  createdAt: DateTime!
+
+  """If a job has a status of `complete`, a signed download URL is returned"""
+  downloadUrl: String
+  fileHash: String!
+  filename: String!
+  jobUuid: String!
+  status: UserAudioUploadJobStatus!
+  updatedAt: DateTime!
+  userUuid: String!
+}
+
+enum UserAudioUploadJobStatus {
+  completed
+  file_too_large
+  internal_error
+  invalid_bpm
+  invalid_mime_type
+  processing
+  quarantined
+  storage_limit_exceeded
+  upload_pending
+  validation_failed
+}
+
+type UserAudioUploadUrl {
+  jobUuid: String!
+  uploadUrl: String!
+}
+
+type UserExtendedAttributes {
+  channel: String
+  client_installed: Boolean
+  credits: Int
+  email_verified: Boolean
+  features: [String]
+  hasSkills: Boolean
+  has_cc: Boolean
+  identities: [UserIdentity]
+  location: String
+  pubnub_key: String
+  sounds: Boolean
+  sounds_plan: Int
+  sounds_state: String
+  tos: Boolean
+  username_last_updated_at: String
+  xsfr: String
+  xsrf: String
+}
+
+type UserIdentity {
+  account_id: String
+  created_at: DateTime
+  email: String
+  phone: String
+  provider: String
+  updated_at: DateTime
+  user_uuid: String
+}
+
+type UserStatus {
+  client_installed: Boolean
+  collaboration_count: Int @deprecated(reason: "studio removal")
+  dismissed: Dismissables
+  has_trialed_before: Boolean
+  previous_sounds_subscriber: Boolean
+  project_count: Int @deprecated(reason: "studio removal")
+  signup_date: String
+}
+
+"""Input values used when updating User."""
+input UserUpdateInput {
+  avatar: String
+  bio: String
+  email: String
+  location: String
+  name: String
+  username: String
+  uuid: GUID!
+}
+
+type V2Project {
+  artwork_url: URL
+  collaborators: [LegacyStudioUser]
+  creator: LegacyStudioUser
+  daw: String
+  daw_version: String
+  description: String
+  latest_revision: LegacyStudioRevision
+  name: String
+  uuid: GUID
+}
+
+type V2ProjectManifest {
+  collaboration: Boolean
+  created_at: String
+  creator_id: Int
+  effective_revision_mtime: String
+  files: LegacyStudioProjectFileCollection
+  is_newly_spliced: Boolean
+  name: String
+  path: String
+  previous_revision_uuid: GUID
+  project_type: String
+  revision_mtime: String
+  revision_uuid: GUID
+  total_size: Int
+  username: String
+  uuid: GUID
+  version: Int
+}
+
+type V2User {
+  avatar_background_url: String
+  avatar_url: String
+  bio: String
+  created_at: String
+  follower_count: Int
+  following_count: Int
+  id: Int
+  location: String
+  release_like_count: Int
+  release_play_count: Int
+  username: String
+  uuid: GUID
+}
+
+type VideoAsset implements IAsset & IAssetChild {
+  activities: [AssetActivity]
+  allowed_asset_type_child: [AssetType]
+
+  """
+  Asset Visibility Slug will be used to represent the visibility status of a video
+  """
+  asset_access_type_slug: AssetAccessTypeSlug
+
+  """Asset Category Slug defines the kind of video"""
+  asset_category_slug: AssetCategorySlug
+  asset_devices: [AssetDevice]
+  asset_prices: [Price]
+  asset_status_slug: AssetStatusSlug
+  asset_type: AssetType
+  asset_type_slug: AssetTypeSlug
+
+  """Eg. if an asset is rare"""
+  attributes: [AssetAttributeSlug!]
+
+  """Eg, if asset is eligible for Presonus free bundled content"""
+  bundled_content_daws: [AssetBundledContentDawSlug!]
+  created_at: DateTime
+  description: String
+  devices: [IDevice] @deprecated(reason: "replacing with asset_devices")
+  duration: Int
+  files: [AssetFile!]
+
+  """Ingestion issues associated with the asset."""
+  ingestion_issues: AssetIngestionIssues
+  instructor_uuids: [GUID]
+
+  """Instructor will be used to represent the instructors"""
+  instructors: [Instructor]
+  legacy_permalink: String
+  licensed: Boolean
+  liked: Boolean
+  marketplace_status_slug: MarketplaceStatusSlug
+  name: String
+  parent_asset_counts: [RelatedAssetsCounts]
+  parent_asset_uuids: [GUID]
+  parents(filter: AssetFiltersInput!, pagination: CursorPaginationInput, sort: AssetSortInput): AssetPage
+  permalink_base_url: String
+  permalink_slug: String
+  provider: Provider
+  provider_sku: String
+  provider_uuid: GUID
+
+  """Public will be used to represent videos that are free to all"""
+  public: Boolean
+  similar_assets(asset_type_slug: SimilarAssetTypeSlug!, limit: Int): AssetPage
+  tags: [Tag]
+
+  """
+  Trial will be used to represent whether the video is available only to trial members
+  """
+  trial: Boolean
+  updated_at: DateTime
+  uuid: GUID!
+}
+
+"""Represents NULL values"""
+scalar Void
+
+"""The "public" representation of a pack coming out of the Legacy API."""
+type WWWCollection {
+  asset_uuid: String
+  cover_url: String
+  created_at: String
+  creator: User
+  demo_mp3_url: String
+  description: String
+  name: String
+  owned: Boolean
+  pack_count: Int
+  permalink: String
+  preset_count: Int
+  public: Boolean
+  sample_count: Int
+  subscribers_subset: [User]
+  subscription_count: Int
+  updated_at: String
+  uuid: ID
+}
+
+"""The "public" representation of a pack coming out of the Legacy API."""
+type WWWPack {
+  asset_uuid: String
+  banner_url: URL
+  cover_url: URL
+  created_at: String
+  current_global_chart_pos: Int
+  current_label_chart_pos: Int
+  demo_mp3_url: String
+  description: String
+  featured: Int
+  is_archived: Boolean
+  last_global_chart_pos: Int
+  last_label_chart_pos: Int
+  liked: Boolean
+  loops_count: Int
+  main_genre: String
+  name: String
+  one_shots_count: Int
+  permalink: String
+  popularity: String
+  preset_count: Int
+  presets: JSON
+  provider_name: String
+  provider_permalink: String
+  provider_uuid: ID
+  published: Boolean
+  published_at: String
+  sample_count: Int
+  samples: JSON
+  tag_stats: JSON
+  tags: [String]
+  updated_at: String
+  uuid: ID
+}
+
+type WwwContentGroups {
+  groups: [ContentGroup]
+}
+
+type WwwGearDetails {
+  created_at: String!
+  description: String!
+  discount_text: String!
+  edition_level: String!
+  editions: [GearEdition]
+  features: [GearMedia]
+  full_price: Int!
+  gallery: [GearMedia]
+  has_upgrade: Boolean!
+  highlights: [GearFeatureHighlights]
+  included_components: [GearComponent]
+  included_in: [GearComponent]
+  installment_price: Int!
+  marketing: GearSeo!
+  marketing_opt_in: Boolean!
+  mini_features: GearFeatureHighlights
+  name: String!
+  plugin: PluginDescription!
+  plugin_description_id: Int!
+  plugin_seller_code: String!
+  specifications: GearSpecifications!
+  testimonials: [GearImage]
+  total_installments: Int!
+  trial_period_days: Int!
+  uuid: GUID!
+}
+
+type WwwGenre {
+  bpm_high: Int
+  bpm_low: Int
+  description: String
+  genres_influenced: [InfluenceGenre!]
+  genres_influenced_by: [InfluenceGenre!]
+  id: ID!
+  locations: [String]
+  name: String
+  permalink: String
+  seo_description: String
+  uuid: GUID!
+  year: Int
+}
+
+interface WwwLeasablePluginPayload {
+  created_at: Int!
+  essential_rto_carousel_index: Int!
+  plugin: PluginDescription!
+}
+
+type WwwMeReleasesLiked {
+  releases: [String]
+}
+
+type WwwPlugin {
+  background_url: String
+  canonical_url: String!
+  description: String
+  gear_details: WwwGearDetails
+  hide: Boolean
+  id: Int!
+  is_free: Boolean!
+  manufacturer: Manufacturer!
+  name: String!
+  prerelease: Boolean
+  price: Int
+  purchase_type: PurchaseType
+  retail_url: String
+  screenshot_url: String!
+  seller_code: String!
+  tag_list: [String]
+  thumbnail_url: String!
+  types: [String!]!
+  uuid: String!
+}
+
+type WwwPluginAdvertisement {
+  alt: String!
+  product: WwwPlugin!
+  src: String!
+  src_2x: String!
+  src_mobile: String!
+  src_mobile_2x: String!
+}
+
+type WwwPluginLease {
+  installment_price: Int!
+  installments_paid: Int!
+  leasable_plugin: LeaseData
+  period_end_at: String!
+  plugin: PluginInfo
+  plugin_display_name: String!
+  state: String
+  total_installments: Int!
+  uuid: String!
+}
+
+"""A provider (label) as represented by the Legacy API."""
+type WwwPremiumProvider {
+  catalog_uuid: String
+  current_provider_chart_position: Int!
+  description: String
+  facebook_url: String
+  image_path: String!
+  last_provider_chart_position: Int!
+  name: String!
+  pack_count: Int!
+  permalink: String!
+  twitter_url: String
+  url: String!
+  uuid: String!
+}
+
+type WwwSoundsCustomPack {
+  matching_packs: [WwwSoundsCustomPackMatchingPack]
+  matching_tags: JSON
+  samples: [WwwSoundsCustomPackSample]
+  set: WwwSoundsCustomPackSet
+  total_hits: Int
+}
+
+type WwwSoundsCustomPackMatchingPack {
+  banner_url: String
+  cover_url: String
+  description: String
+  featured: Int
+  is_archived: Boolean
+  main_genre: String
+  name: String
+  permalink: String
+  preset_count: Int
+  provider_name: String
+  sample_count: Int
+  uuid: String
+}
+
+type WwwSoundsCustomPackSample {
+  dir: String
+  duration: Int
+  file_hash: String
+  filename: String
+  genre: String
+  pack: WwwSoundsCustomPackSamplePack
+  popularity: Int
+  preview_url: String
+  price: Int
+  provider_name: String
+  provider_permalink: String
+  provider_uuid: String
+  published: Boolean
+  published_at: String
+  sample_type: String
+  tags: [String]
+  trending: Int
+  waveform_url: String
+}
+
+type WwwSoundsCustomPackSamplePack {
+  banner_url: String
+  cover_url: String
+  description: String
+  featured: Int
+  is_archived: Boolean
+  main_genre: String
+  name: String
+  permalink: String
+  preset_count: Int
+  provider_name: String
+  sample_count: Int
+  uuid: String
+}
+
+"""set is another name for collection or repack"""
+type WwwSoundsCustomPackSet {
+  cover_url: String
+  created_at: String
+  creator: WwwSoundsCustomPackSetCreator
+  demo_mp3_url: String
+  description: String
+  name: String
+  pack_count: Int
+  permalink: String
+  preset_count: Int
+  public: Boolean
+  sample_count: Int
+  subscribers_subset: [WwwSoundsCustomPackSetSubscribersSubset]
+  subscription_count: Int
+  updated_at: String
+  uuid: String
+}
+
+type WwwSoundsCustomPackSetCreator {
+  avatar_url: String
+  id: Int
+  name: String
+  username: String
+}
+
+type WwwSoundsCustomPackSetSubscribersSubset {
+  avatar_url: String
+  id: Int
+  name: String
+  username: String
+}
+
+type WwwSoundsPack {
+  banner_url: String
+  companion_pack_group: WwwSoundsPackCompanionPackGroup
+  cover_url: String
+  demo_mp3_url: String
+  description: String
+  extras: [WwwSoundsPackExtra]
+  featured: Int
+  liked: Boolean
+  loops_count: Int
+  main_genre: String
+  name: String
+  one_shots_count: Int
+  permalink: String
+  preset_count: Int
+  presets: [WwwwSoundsPackPreset]
+  provider_name: String
+  provider_permalink: String
+  provider_uuid: String
+  sample_count: Int
+  samples: [WwwSoundsPackSample]
+  story: WwwSoundsPackStory
+  tag_stats: JSON
+  uuid: String!
+}
+
+type WwwSoundsPackCompanionPack {
+  pack: WwwSoundsPackCompanionPackData
+}
+
+type WwwSoundsPackCompanionPackData {
+  cover_url: String
+  description: String
+  featured: Int
+  main_genre: String
+  name: String
+  permalink: String
+  provider_name: String
+  uuid: String
+}
+
+type WwwSoundsPackCompanionPackGroup {
+  members: [WwwSoundsPackCompanionPack]
+  parent_pack: WwwSoundsPackCompanionPack
+}
+
+type WwwSoundsPackCost {
+  credits: Int!
+}
+
+type WwwSoundsPackExtra {
+  description: String
+  licensed: Boolean
+  permalink: String
+  preview_url: String
+  price: Int
+  title: String
+  type: String!
+  uuid: String!
+}
+
+type WwwSoundsPackSample {
+  audio_key: String
+  bpm: Int
+  dir: String
+  duration: Int
+  file_hash: String
+  filename: String
+  genre: String
+  pack: WwwSoundsPackSoundPack
+  popularity: Int
+  preview_url: String
+  price: Int
+  provider_name: String
+  provider_permalink: String
+  provider_uuid: String
+  published: Boolean
+  published_at: String
+  sample_type: String
+  tags: [String]
+  trending: Int
+  waveform_url: String
+}
+
+type WwwSoundsPackSoundPack {
+  banner_url: String
+  cover_url: String
+  description: String
+  featured: Int
+  is_archived: Boolean
+  main_genre: String
+  name: String
+  permalink: String
+  preset_count: Int
+  provider_name: String
+  sample_count: Int
+  uuid: String
+}
+
+type WwwSoundsPackStory {
+  background_url: String
+  description: String
+  title: String
+  uuid: String
+  videos: [WwwSoundsPackStoryVideo]
+}
+
+type WwwSoundsPackStoryVideo {
+  background_url: String
+  url: String
+}
+
+type WwwSoundsPacks {
+  matching_tags: JSON
+  packs: [WwwSoundsPacksPack]
+  total_hits: Int
+}
+
+type WwwSoundsPacksPack {
+  banner_url: String
+  cover_url: String
+  created_at: String
+  current_global_chart_pos: Int
+  current_label_chart_pos: Int
+  demo_mp3_url: String
+  featured: Int
+  is_archived: Boolean
+  last_global_chart_pos: Int
+  last_label_chart_pos: Int
+  loops_count: Int
+  matching_plugins: JSON
+  name: String
+  one_shots_count: Int
+  permalink: String
+  popularity: Int
+  preset_count: Int
+  provider_name: String
+  provider_permalink: String
+  provider_uuid: String
+  published: Boolean
+  published_at: String
+  sample_count: Int
+  tag_stats: JSON
+  tags: [String]
+  updated_at: String
+  uuid: String
+}
+
+type WwwUser {
+  avatar_background_url: String
+  avatar_url: String
+  bio: String
+  created_at: String
+  follower_count: Int
+  following_count: Int
+  id: Int
+  location: String
+  release_like_count: Int
+  release_play_count: Int
+  username: String
+}
+
+type WwwUsersFollowers {
+  followers: [WwwUsersFollowersUser]
+  user: WwwUsersFollowersUser
+}
+
+type WwwUsersFollowersUser {
+  avatar_url: String
+  created_at: String
+  id: Int!
+  username: String!
+}
+
+type WwwUsersFollowing {
+  following: [WwwUsersFollowingUser]
+  user: WwwUsersFollowingUser
+}
+
+type WwwUsersFollowingUser {
+  avatar_url: String
+  created_at: String
+  id: Int!
+  username: String!
+}
+
+type WwwwSoundsPackPreset {
+  file_hash: String
+  filename: String
+  is_default: Boolean
+  pack: WwwSoundsPackSoundPack
+  plugin_description_id: Int
+  plugin_name: String
+  plugin_version: String
+  preview_url: String
+  preview_url_mono_g1: String
+  preview_url_mono_g3: String
+  preview_url_mono_g5: String
+  preview_url_poly_g1: String
+  preview_url_poly_g3: String
+  preview_url_poly_g5: String
+  price: Int
+  provider_name: String
+  provider_permalink: String
+  provider_uuid: String
+  published: Boolean
+  published_at: String
+  tags: [String]
+  trending: Int
+  uuid: String
+}
+
+type contentGroupsAssets {
+  groups: [TransformedContentGroup]
+}
