@@ -1,8 +1,8 @@
 [package]
 name = "splicerr"
-version = "1.0.0"
-description = "Yet another Splice frontend, inspired by ascpixi"
-authors = ["kosro"]
+version = "0.1.0"
+description = "A Tauri App"
+authors = ["you"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -23,10 +23,4 @@ tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tauri-plugin-http = "2"
-tauri-plugin-drag = "2.0.0"
-tauri-plugin-fs = "2"
-tauri-plugin-dialog = "2"
-
-[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-tauri-plugin-window-state = "2"
 

@@ -13,29 +13,9 @@
                     "url": "https://spliceproduction.s3.*.amazonaws.com/**"
                 },
                 {
-                    "url": "https://*.splice.com/**"
-                },
-                {
-                    "url": "https://*.amazonaws.com/spliceblob.splice.com/**"
+                    "url": "https://surfaces-graphql.splice.com/graphql"
                 }
             ]
-        },
-        "core:webview:allow-set-webview-zoom",
-        "drag:default",
-        "fs:default",
-        "fs:allow-stat",
-        "fs:allow-mkdir",
-        "fs:allow-create",
-        "fs:allow-write-file",
-        "fs:allow-write-text-file",
-        {
-            "identifier": "fs:scope",
-            "allow": [
-                {
-                    "path": "**"
-                }
-            ]
-        },
-        "dialog:default"
+        }
     ]
 }
