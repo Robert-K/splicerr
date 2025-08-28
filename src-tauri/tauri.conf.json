@@ -19,7 +19,7 @@
         ],
         "security": {
             "csp": {
-                "connect-src": "'self' ipc: blob: http://ipc.localhost http://tauri.localhost https://*.splice.com/** https://spliceproduction.s3.*.amazonaws.com/** https://*.amazonaws.com/spliceblob.splice.com/**"
+                "connect-src": "'self' ipc: blob: http://ipc.localhost http://tauri.localhost https://*.splice.com/** https://spliceproduction.s3.*.amazonaws.com/** https://*.amazonaws.com/spliceblob.splice.com/** https://splice-res.cloudinary.com"
             }
         }
     },

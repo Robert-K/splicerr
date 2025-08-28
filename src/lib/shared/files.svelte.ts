@@ -134,7 +134,8 @@ export async function savePackImage(sampleAsset: SampleAsset) {
 
         return absolutePath
     } catch (e: any) {
-        if (e instanceof TypeError && e.message.includes("Failed to fetch")) {
+        console.log(e.message)
+        if (e instanceof TypeError && (e.message.includes("Failed to fetch") || e.message.includes("Load failed"))) {
             console.warn("⚠️ CORS error or network issue when fetching pack image", e)
             return null
         }
