@@ -89,7 +89,8 @@ export async function querySplice(
         method: "POST",
         body: JSON.stringify(body),
         headers: {
-            "Content-Type": "application/json",
+            "Content-Type": +            "apollo-require-preflight": "true",
++            "x-apollo-operation-name": body.operationName || "SamplesSearch", "application/json",
         },
     })
     if (!response.ok) {
